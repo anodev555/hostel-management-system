@@ -11,12 +11,12 @@ import db from "@/db"
 import { format } from "date-fns"
 import { expenseItems, expenses } from "@/db/schema"
 import { uploadImage, UploadValidationError } from "@/utils/upload-file"
-import { ActionResponse } from "@/types/action-response"
 import { deleteFile } from "@/utils/delete-file"
 import { and, eq, gte, lte, desc, sql, count, inArray } from "drizzle-orm"
 import { ExpenseDashboardData, ExpenseWithItems } from "@/types/expenses-types"
 import { revalidatePath } from "next/cache"
 import { parsePage, parsePerPage } from "../../lib/utils"
+import { ActionResponse } from "@/types/action-response"
 export const createExpensesAction = withAuth<
   CreateExpenseSchemaType,
   ActionResponse<null>
@@ -179,7 +179,7 @@ export const getExpenseDashboardAction = withAuth<
     }
 
     const today = new Date();
-    const month = today.getMonth()+1;
+    const month = today.getMonth() + 1;
     const year = today.getFullYear();
 
     const [[totals], categoryRows, [{ expenseCount }]] = await Promise.all([
@@ -191,8 +191,8 @@ export const getExpenseDashboardAction = withAuth<
         .where(
           and(
             eq(expenses.organizationId, organizationId),
-           eq(expenses.expenseYear, year),
-           eq(expenses.expenseMonth, month)
+            eq(expenses.expenseYear, year),
+            eq(expenses.expenseMonth, month)
           )
         ),
 
@@ -205,8 +205,8 @@ export const getExpenseDashboardAction = withAuth<
         .where(
           and(
             eq(expenses.organizationId, organizationId),
-           eq(expenses.expenseYear, year),
-           eq(expenses.expenseMonth, month)
+            eq(expenses.expenseYear, year),
+            eq(expenses.expenseMonth, month)
           )
         )
         .groupBy(expenses.category)
@@ -220,8 +220,8 @@ export const getExpenseDashboardAction = withAuth<
         .where(
           and(
             eq(expenses.organizationId, organizationId),
-         eq(expenses.expenseYear, year),
-           eq(expenses.expenseMonth, month)
+            eq(expenses.expenseYear, year),
+            eq(expenses.expenseMonth, month)
           )
         ),
     ])
@@ -230,7 +230,7 @@ export const getExpenseDashboardAction = withAuth<
       success: true,
       data: {
         total: totals.total,
-        date: today, 
+        date: today,
         categoryRows,
         expenseCount,
       },
@@ -269,139 +269,139 @@ export const getAllExpenseData = withAuth<
     expenses: ["read"],
   },
   requireActiveOrg: true,
-})(async ({organizationId, data}):Promise<ActionResponse<{ expenses: ExpenseWithItems[]; totalPages: number }>> => {
+})(async ({ organizationId, data }): Promise<ActionResponse<{ expenses: ExpenseWithItems[]; totalPages: number }>> => {
 
-try{
-if(!organizationId){
-  return{
-    success:false,
-    message:"Organization not found! please login again",
-  }
-}
-const parsedData = expenseFilterSchema.safeParse(data || {})
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "Organization not found! please login again",
+      }
+    }
+    const parsedData = expenseFilterSchema.safeParse(data || {})
 
-if (!parsedData.success) {
-  const {fieldErrors} = parsedData.error.flatten()
-  return {
-    success: false,
-    message: "Invalid filter parameters",
-    fieldErrors
-  }
-}
+    if (!parsedData.success) {
+      const { fieldErrors } = parsedData.error.flatten()
+      return {
+        success: false,
+        message: "Invalid filter parameters",
+        fieldErrors
+      }
+    }
 
-const { from, to, perpage, page } = parsedData.data
-const perPage =parsePerPage(perpage)
-const pageNumber = parsePage(page) 
-const offset = (pageNumber - 1) * perPage
+    const { from, to, perpage, page } = parsedData.data
+    const perPage = parsePerPage(perpage)
+    const pageNumber = parsePage(page)
+    const offset = (pageNumber - 1) * perPage
 
 
-  const fromDate = parseOptionalDate(from)
-  const toDate = parseOptionalDate(to)
-  
-const filterCondition = [ eq(expenses.organizationId, organizationId)]
-if(fromDate){
-  filterCondition.push(gte(expenses.expenseDate, fromDate))
-}
-if(toDate){
-  filterCondition.push(lte(expenses.expenseDate, toDate))
-}
-const monthFilter = and(...filterCondition)
-// Step 1: Get paginated expense IDs first
-const expenseIdsQuery = db.select({
-  id: expenses.id
-})
-.from(expenses)
-.where(monthFilter)
-.orderBy(desc(expenses.expenseDate))
-.limit(perPage)
-.offset(offset)
+    const fromDate = parseOptionalDate(from)
+    const toDate = parseOptionalDate(to)
 
-// Step 2: Get total count of unique expenses
-const countQuery = db.select({
-  total: count(expenses.id)
-})
-.from(expenses)
-.where(monthFilter)
-
-// Step 3: Fetch full expense data with items for the paginated IDs
-const [expenseIdsResult, [{total}]] = await Promise.all([
-  expenseIdsQuery,
-  countQuery
-])
-
-const expenseIds = expenseIdsResult.map(row => row.id)
-
-// Step 4: Fetch expenses with their items using the IDs
-const expensesWithItems = await db.select({
-  id: expenses.id,
-  expenseDate: expenses.expenseDate,
-  category: expenses.category,
-  totalAmount: expenses.totalAmount,
-  paymentMethod: expenses.paymentMethod,
-  billNumber: expenses.billNumber,
-  paidTo: expenses.paidTo,
-  paidBy: expenses.paidBy,
-  remarks: expenses.remarks,
-  itemId: expenseItems.id,
-  itemName: expenseItems.itemName,
-  quantity: expenseItems.quantity,
-  unitPrice: expenseItems.unitPrice,
-  amount: expenseItems.amount,
-})
-.from(expenses)
-.leftJoin(expenseItems, eq(expenses.id, expenseItems.expenseId))
-.where(inArray(expenses.id, expenseIds))
-
-// Step 5: Group and return
-const expensesMap = new Map()
-// ... existing grouping logic
-const expensesArray = Array.isArray(expensesWithItems) ? expensesWithItems : []
-expensesArray.forEach(row => {
-  if (!expensesMap.has(row.id)) {
-    expensesMap.set(row.id, {
-      id: row.id,
-      expenseDate: row.expenseDate,
-      category: row.category,
-      totalAmount: row.totalAmount,
-      paymentMethod: row.paymentMethod,
-      billNumber: row.billNumber,
-      paidTo: row.paidTo,
-      paidBy: row.paidBy,
-      remarks: row.remarks,
-      items: []
+    const filterCondition = [eq(expenses.organizationId, organizationId)]
+    if (fromDate) {
+      filterCondition.push(gte(expenses.expenseDate, fromDate))
+    }
+    if (toDate) {
+      filterCondition.push(lte(expenses.expenseDate, toDate))
+    }
+    const monthFilter = and(...filterCondition)
+    // Step 1: Get paginated expense IDs first
+    const expenseIdsQuery = db.select({
+      id: expenses.id
     })
-  }
-  
-  if (row.itemId) {
-    expensesMap.get(row.id).items.push({
-      id: row.itemId,
-      itemName: row.itemName,
-      quantity: row.quantity,
-      unitPrice: row.unitPrice,
-      amount: row.amount
+      .from(expenses)
+      .where(monthFilter)
+      .orderBy(desc(expenses.expenseDate))
+      .limit(perPage)
+      .offset(offset)
+
+    // Step 2: Get total count of unique expenses
+    const countQuery = db.select({
+      total: count(expenses.id)
     })
-  }
-})
+      .from(expenses)
+      .where(monthFilter)
 
-const expensesData = Array.from(expensesMap.values())
-const totalPages = Math.ceil(total / perPage)
-console.log(expensesData)
-return {
-  success: true,
-  message: "Expenses retrieved successfully",
-  data: {
-    expenses: expensesData,
-    totalPages: totalPages,
-   
-  }
-}
+    // Step 3: Fetch full expense data with items for the paginated IDs
+    const [expenseIdsResult, [{ total }]] = await Promise.all([
+      expenseIdsQuery,
+      countQuery
+    ])
 
-}catch(error){
-  console.error(error)
-  return {
-    success: false,
-    message: "something went wrong",
+    const expenseIds = expenseIdsResult.map(row => row.id)
+
+    // Step 4: Fetch expenses with their items using the IDs
+    const expensesWithItems = await db.select({
+      id: expenses.id,
+      expenseDate: expenses.expenseDate,
+      category: expenses.category,
+      totalAmount: expenses.totalAmount,
+      paymentMethod: expenses.paymentMethod,
+      billNumber: expenses.billNumber,
+      paidTo: expenses.paidTo,
+      paidBy: expenses.paidBy,
+      remarks: expenses.remarks,
+      itemId: expenseItems.id,
+      itemName: expenseItems.itemName,
+      quantity: expenseItems.quantity,
+      unitPrice: expenseItems.unitPrice,
+      amount: expenseItems.amount,
+    })
+      .from(expenses)
+      .leftJoin(expenseItems, eq(expenses.id, expenseItems.expenseId))
+      .where(inArray(expenses.id, expenseIds))
+
+    // Step 5: Group and return
+    const expensesMap = new Map()
+    // ... existing grouping logic
+    const expensesArray = Array.isArray(expensesWithItems) ? expensesWithItems : []
+    expensesArray.forEach(row => {
+      if (!expensesMap.has(row.id)) {
+        expensesMap.set(row.id, {
+          id: row.id,
+          expenseDate: row.expenseDate,
+          category: row.category,
+          totalAmount: row.totalAmount,
+          paymentMethod: row.paymentMethod,
+          billNumber: row.billNumber,
+          paidTo: row.paidTo,
+          paidBy: row.paidBy,
+          remarks: row.remarks,
+          items: []
+        })
+      }
+
+      if (row.itemId) {
+        expensesMap.get(row.id).items.push({
+          id: row.itemId,
+          itemName: row.itemName,
+          quantity: row.quantity,
+          unitPrice: row.unitPrice,
+          amount: row.amount
+        })
+      }
+    })
+
+    const expensesData = Array.from(expensesMap.values())
+    const totalPages = Math.ceil(total / perPage)
+    console.log(expensesData)
+    return {
+      success: true,
+      message: "Expenses retrieved successfully",
+      data: {
+        expenses: expensesData,
+        totalPages: totalPages,
+
+      }
+    }
+
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message: "something went wrong",
+    }
   }
-}
 
 })

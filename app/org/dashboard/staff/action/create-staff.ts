@@ -7,7 +7,6 @@ import db from "@/db"
 import { organizationRole, user } from "@/db/schema/auth-schema"
 import { auth } from "@/lib/auth"
 import { withAuth } from "@/lib/withAuth"
-import { ActionResponse } from "@/types/action-response"
 import {
   createStaffSchema,
   type CreateStaffSchemaType,
@@ -15,6 +14,7 @@ import {
 import { revalidatePath, updateTag } from "next/cache"
 import { payrollContract } from "@/db/schema"
 import { format } from "date-fns"
+import { ActionResponse } from "@/types/action-response"
 
 export const createStaffAction = withAuth<
   CreateStaffSchemaType,

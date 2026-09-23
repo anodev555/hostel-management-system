@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   //get previous month period
   const period = getPreviousMonth()
 
-  const orgs = await db.select().from(organization).where(eq(organization.isActive,true))
+  const orgs = await db.select().from(organization).where(eq(organization.isActive, true))
 
   const results: OrgGenerateResult[] = []
 

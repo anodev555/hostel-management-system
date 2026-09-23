@@ -43,10 +43,7 @@ import {
   createStaffSchema,
   type CreateStaffSchemaType,
 } from "../schema/createStaff"
-import {
-  getRolesDataAction,
-  RoleData,
-} from "../../roles/action/public-getroles"
+
 import {
   Dialog,
   DialogContent,
@@ -57,6 +54,8 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { createStaffAction } from "../action/create-staff"
+import { getRolesDataAction, RoleData } from "../../roles/action/public-getroles"
+import { error } from "console"
 
 function formatRoleLabel(role: string) {
   return role.charAt(0).toUpperCase() + role.slice(1)
@@ -113,16 +112,24 @@ export default function StaffForm() {
       if (response.success) {
         toast.success(response.message ?? "Staff created successfully")
         form.reset()
+        setOpen(false)
       } else {
         toast.error(response.message)
         if (response.fieldErrors) {
-          for (const [field, errors] of Object.entries(response.fieldErrors)) {
-            form.setError(field as keyof CreateStaffSchemaType, {
-              message: errors.join(", "),
-            })
-          }
+          Object.entries(response.fieldErrors).forEach(([field, error]) => {
+            if (error && error.length > 0) {
+              form.setError(field as keyof CreateStaffSchemaType, {
+                message: error.join(", "),
+              })
+            }
+          })
         }
+
+
+
       }
+
+
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create staff"

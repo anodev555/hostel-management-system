@@ -6,7 +6,6 @@ import { withAuth } from "@/lib/withAuth"
 import { ActionResponse } from "@/types/action-response"
 import { RoleItem } from "@/types/role/roles-type"
 import { and, eq, like } from "drizzle-orm"
-import { cacheLife, cacheTag } from "next/cache"
 interface GetAllRolesProps {
   search?: string
 }
@@ -20,7 +19,7 @@ export const getAllRolesAction = withAuth<
   },
 })(async ({
   data,
-  headers,
+
   organizationId,
 }): Promise<ActionResponse<RoleItem[]>> => {
   try {
@@ -49,9 +48,9 @@ export const getAllRolesAction = withAuth<
       .where(
         search
           ? and(
-              eq(organizationRole.organizationId, organizationId),
-              like(organizationRole.role, `%${search}%`)
-            )
+            eq(organizationRole.organizationId, organizationId),
+            like(organizationRole.role, `%${search}%`)
+          )
           : eq(organizationRole.organizationId, organizationId)
       )
 

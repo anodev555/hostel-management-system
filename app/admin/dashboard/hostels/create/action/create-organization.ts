@@ -45,7 +45,7 @@ export const createOrganizationAction = withAuth<
       body: {
         email: parsed.data.ownerEmail,
         name: parsed.data.ownerFullName,
-        role: "orgUser",
+        role: "orgAdmin",
         password: parsed.data.ownerPassword,
         data: {
           contactPhone: parsed.data.ownerPhone,
@@ -138,10 +138,11 @@ export const createOrganizationWithExistingUserAction = withAuth<
       }
     }
 
-    if (isUserExists.role !== "orgUser") {
+    if (isUserExists.role !== "orgAdmin") {
       return {
         success: false,
-        message: "User is not an organization user! Cannot assign Organization",
+        message:
+          "User is not an organization admin! Cannot assign Organization",
       }
     }
 
