@@ -3,20 +3,15 @@ import {
   AudioLinesIcon,
   TerminalIcon,
   PlusIcon,
-  TerminalSquareIcon,
-  BotIcon,
-  FrameIcon,
-  PieChartIcon,
-  MapIcon,
-  UsersIcon,
   UserKey,
-  SettingsIcon,
   DoorOpen,
   User,
   WalletIcon,
   GraduationCap,
   BanknoteArrowDown,
-} from "lucide-react"
+  UserCheck,
+  BanknoteArrowUp,
+} from "lucide-react";
 
 export const data = {
   user: {
@@ -51,7 +46,6 @@ export const data = {
     },
   ],
 
-  
   Rooms: [
     {
       title: "Rooms",
@@ -85,12 +79,32 @@ export const data = {
       isActive: true,
     },
   ],
-  Billing: [
+  // Billing: [
+  //   {
+  //     title: "Billing",
+  //     url: "/org/dashboard/billing",
+  //     icon: <WalletIcon />,
+  //     isActive: true,
+  //   },
+  // ],
+  Billings: [
     {
-      title: "Billing",
-      url: "/org/dashboard/billing",
+      title: "Billings",
+      url: "#",
       icon: <WalletIcon />,
-      isActive: true,
+      isActive: false,
+      items: [
+        {
+          title: "Student Billing",
+          url: "/org/dashboard/billing",
+          icon: <UserCheck />,
+        },
+        {
+          title: "Payroll",
+          url: "#",
+          icon: <BanknoteArrowUp />,
+        },
+      ],
     },
   ],
   Tuition: [
@@ -109,4 +123,4 @@ export const data = {
       isActive: true,
     },
   ],
-}
+};

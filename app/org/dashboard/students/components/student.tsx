@@ -12,16 +12,16 @@ export default async function Student({
 }: {
   searchParams: Promise<{
     page?: string
-    perPage?: string
+    perpage?: string
     search?: string
     status?: string
   }>
 }) {
   try {
-    const { page, perPage, search, status } = await searchParams
+    const { page, perpage, search, status } = await searchParams
     const response = await getStudentsAction({
       page: page,
-      perPage: perPage,
+      perPage: perpage,
       search: search,
       status: status,
     })

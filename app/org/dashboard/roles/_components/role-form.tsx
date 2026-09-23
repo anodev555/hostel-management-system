@@ -27,7 +27,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { orgPermissions } from "@/lib/org-permissions"
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -38,6 +37,7 @@ import {
 } from "@/components/ui/dialog"
 import { CreateRoleSchemaType, roleSchema } from "../schema/roleSchema"
 import { createRoleAction } from "../action/create-role"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const RESOURCES = Object.keys(orgPermissions) as [
   keyof typeof orgPermissions,
