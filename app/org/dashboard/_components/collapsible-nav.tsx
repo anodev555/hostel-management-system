@@ -11,9 +11,9 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import type { CollapsibleNavItem } from "./nav-types"
 import { ChevronRightIcon } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { CollapsibleNavItem } from "@/app/admin/dashboard/_components/nav-types"
 
 type CollapsibleNavProps = {
   label: string

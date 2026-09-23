@@ -14,12 +14,12 @@ export function TeamSwitcherSkeleton() {
           disabled
           className="pointer-events-none opacity-100"
         >
-          <Skeleton className="size-10 shrink-0 rounded-lg" />
+          <Skeleton className="size-10 bg-input/100 shrink-0 rounded-lg" />
           <div className="grid min-w-0 flex-1 gap-1 text-left">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-4 bg-input/100 w-28" />
+            <Skeleton className="h-3 bg-input/100 w-20" />
           </div>
-          <Skeleton className="ml-auto size-4 shrink-0 rounded-sm" />
+          <Skeleton className="ml-auto size-4 bg-input/100 shrink-0 rounded-sm" />
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
@@ -35,12 +35,12 @@ export function NavUserSkeleton() {
           disabled
           className="pointer-events-none opacity-100"
         >
-          <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+          <Skeleton className="h-8 w-8 bg-input/100 shrink-0 rounded-lg" />
           <div className="grid min-w-0 flex-1 gap-1 text-left">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-4 bg-input/100 w-24" />
+            <Skeleton className="h-3 bg-input/100 w-32" />
           </div>
-          <Skeleton className="ml-auto size-4 shrink-0 rounded-sm" />
+          <Skeleton className="ml-auto bg-input/100 size-4 shrink-0 rounded-sm" />
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

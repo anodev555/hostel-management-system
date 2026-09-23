@@ -78,6 +78,7 @@ export default function EditPaymentForm({
 
   async function onSubmit(data: EditPaymentSchemaType) {
     if (isLoading) return
+
     try {
       setIsLoading(true)
       const response = await updatePaymentAction(data)
@@ -249,9 +250,12 @@ export default function EditPaymentForm({
             type="button"
             variant="outline"
             disabled={isLoading}
-            onClick={() => form.reset(defaultValues)}
+            onClick={() => {
+              form.reset(defaultValues);
+              setOpen(false);
+            }}
           >
-          Cancel
+            Cancel
           </Button>
           <Button
             className="flex w-30 items-center justify-center gap-2"
