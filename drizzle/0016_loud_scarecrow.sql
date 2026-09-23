@@ -1,0 +1,2 @@
+ALTER TABLE "expense_items" DROP CONSTRAINT "line_amount_matches";--> statement-breakpoint
+ALTER TABLE "expense_items" ADD CONSTRAINT "line_amount_matches" CHECK ("expense_items"."amount" = "expense_items"."quantity" * "expense_items"."unit_price");

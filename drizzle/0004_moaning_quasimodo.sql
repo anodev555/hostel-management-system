@@ -1,0 +1,2 @@
+ALTER TABLE "payment" ADD COLUMN "collected_by" text;--> statement-breakpoint
+ALTER TABLE "payment" ADD CONSTRAINT "payment_collected_by_user_id_fk" FOREIGN KEY ("collected_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE cascade;

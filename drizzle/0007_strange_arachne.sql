@@ -1,0 +1,1 @@
+ALTER TABLE "tuition_teacher" ADD COLUMN "status" "teacher_status" DEFAULT 'active' NOT NULL;

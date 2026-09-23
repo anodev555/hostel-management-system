@@ -1,0 +1,1 @@
+ALTER TABLE "expenses" ADD COLUMN "expense_day_of_month" integer NOT NULL;

@@ -1,0 +1,3 @@
+CREATE INDEX "idx_sra_org_dates" ON "student_room_assignment" USING btree ("organization_id","start_date","end_date");--> statement-breakpoint
+CREATE INDEX "idx_sfa_org_dates" ON "student_food_assignment" USING btree ("organization_id","start_date","end_date");--> statement-breakpoint
+CREATE INDEX "idx_sta_org_dates" ON "student_tuition_assignment" USING btree ("organization_id","start_date","end_date");

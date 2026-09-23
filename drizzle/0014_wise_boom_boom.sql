@@ -1,0 +1,1 @@
+ALTER TABLE "expense_items" ALTER COLUMN "expense_id" SET DATA TYPE uuid;
