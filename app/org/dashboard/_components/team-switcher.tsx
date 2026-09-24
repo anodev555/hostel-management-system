@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ArrowRightLeft, ChevronsUpDownIcon } from "lucide-react"
 import { authClient } from "@/lib/authClient"
-import { Org } from "./app-sidebar"
+import type { Org } from "@/types/org-type"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"

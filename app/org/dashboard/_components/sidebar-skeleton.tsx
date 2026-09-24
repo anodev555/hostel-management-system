@@ -52,7 +52,11 @@ export function SidebarMenuSkeleton() {
     <SidebarMenu>
       <SidebarMenuItem className="flex flex-col gap-6 p-2">
         {Array.from({ length: 15 }).map((_, index) => (
-          <Skeleton key={index} className="h-10 w-full rounded-md" />
+          <div key={index} className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-30 bg-input/100 rounded-md"/>
+                      <Skeleton className="h-10 bg-input/100 w-full rounded-md" />
+
+          </div>
         ))}
       </SidebarMenuItem>
     </SidebarMenu>

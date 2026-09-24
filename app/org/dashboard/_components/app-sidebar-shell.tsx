@@ -13,7 +13,7 @@ export function AppSidebarShell({
   nav: React.ReactNode
 }) {
   return (
-    <Sidebar collapsible="icon" className="rounded-r-lg border-r">
+    <Sidebar collapsible="icon"className="rounded-r-lg border-0!">
       <SidebarHeader>{header}</SidebarHeader>
 
       <SidebarContent>{nav}</SidebarContent>

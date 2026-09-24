@@ -9,7 +9,7 @@ export function PermissionGate({resource , action, children, fallback = null}:{
     fallback?: React.ReactNode;
 }){
     const {isLoading , hasPermission} = usePermissions();
-    // if(isLoading) return fallback
+    if(isLoading) return <>{fallback}</>
 
     if(!hasPermission(resource, action)){
         return <>{fallback}</>

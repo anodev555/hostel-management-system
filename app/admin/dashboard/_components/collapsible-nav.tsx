@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 
 import {
   SidebarGroup,
@@ -10,15 +9,19 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
-import type { CollapsibleNavItem } from "./nav-types"
-import { ChevronRightIcon } from "lucide-react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+} from "@/components/ui/sidebar";
+import type { CollapsibleNavItem } from "./nav-types";
+import { ChevronRightIcon } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 type CollapsibleNavProps = {
-  label: string
-  items: CollapsibleNavItem[]
-}
+  label: string;
+  items: CollapsibleNavItem[];
+};
 
 export function CollapsibleNav({ label, items }: CollapsibleNavProps) {
   return (
@@ -62,5 +65,5 @@ export function CollapsibleNav({ label, items }: CollapsibleNavProps) {
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }
