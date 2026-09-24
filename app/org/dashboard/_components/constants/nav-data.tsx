@@ -12,6 +12,7 @@ import {
   UserCheck,
   BanknoteArrowUp,
 } from "lucide-react";
+import type { OrgNavGroup } from "../nav-types";
 
 export const data = {
   user: {
@@ -46,29 +47,48 @@ export const data = {
     },
   ],
 
-  Rooms: [
-    {
-      title: "Rooms",
-      url: "/org/dashboard/rooms",
-      icon: <DoorOpen />,
-      isActive: true,
-    },
-  ],
+  // Rooms: [
+  //   {
+  //     title: "Rooms",
+  //     url: "/org/dashboard/rooms",
+  //     icon: <DoorOpen />,
+  //     isActive: true,
+  //   },
+  // ],
 
-  roles: [
-    {
-      title: "Roles",
-      url: "/org/dashboard/roles",
-      icon: <UserKey />,
-      isActive: true,
-    },
-  ],
-  staff: [
+  // roles: [
+  //   {
+  //     title: "Roles",
+  //     url: "/org/dashboard/roles",
+  //     icon: <UserKey />,
+  //     isActive: true,
+  //   },
+  // ],
+  // staff: [
+  //   {
+  //     title: "Staff",
+  //     url: "/org/dashboard/staff",
+  //     icon: <UserKey />,
+  //     isActive: true,
+  //   },
+  // ],
+  Staff: [
     {
       title: "Staff",
-      url: "/org/dashboard/staff",
+      url: "#",
       icon: <UserKey />,
-      isActive: true,
+      items: [
+        {
+          title: "Staff",
+          url: "/org/dashboard/staff",
+          icon: <UserKey />,
+        },
+        {
+          title: "Roles",
+          url: "/org/dashboard/roles",
+          icon: <UserKey />,
+        },
+      ],
     },
   ],
   Students: [
@@ -77,16 +97,26 @@ export const data = {
       url: "/org/dashboard/students",
       icon: <User />,
       isActive: true,
+      items: [
+        {
+          title: "Student",
+          url: "/org/dashboard/students",
+          icon: <User />,
+        },
+        {
+          title: "Room",
+          url: "/org/dashboard/rooms",
+          icon: <DoorOpen />,
+        },
+        {
+          title: "Tuition",
+          url: "/org/dashboard/tuition",
+          icon: <GraduationCap />,
+        },
+      ],
     },
   ],
-  // Billing: [
-  //   {
-  //     title: "Billing",
-  //     url: "/org/dashboard/billing",
-  //     icon: <WalletIcon />,
-  //     isActive: true,
-  //   },
-  // ],
+
   Billings: [
     {
       title: "Billings",
@@ -124,3 +154,60 @@ export const data = {
     },
   ],
 };
+
+export const orgNavGroups: OrgNavGroup[] = [
+  {
+    label: "New Admission",
+    resource: "student",
+    action: "create",
+    items: data.NewAdmission,
+  },
+  {
+    label: "Students",
+    resource: "student",
+    action: "read",
+    items: data.Students,
+  },
+  {
+    label: "Billing",
+    resource: "billing",
+    action: "read",
+    items: data.Billings,
+  },
+  {
+    label: "Staff",
+    resource: "staff",
+    action: "read",
+    items: data.Staff,
+  },
+  // {
+  //   label: "Tuition",
+  //   resource: "tuition",
+  //   action: "read",
+  //   items: data.Tuition,
+  // },
+  // {
+  //   label: "Rooms",
+  //   resource: "room",
+  //   action: "read",
+  //   items: data.Rooms,
+  // },
+  {
+    label: "Expenses",
+    resource: "expenses",
+    action: "read",
+    items: data.Expenses,
+  },
+  // {
+  //   label: "Roles",
+  //   resource: "ac",
+  //   action: "read",
+  //   items: data.roles,
+  // },
+  // {
+  //   label: "Staff",
+  //   resource: "staff",
+  //   action: "read",
+  //   items: data.Staff,
+  // },
+];

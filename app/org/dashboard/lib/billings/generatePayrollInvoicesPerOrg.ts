@@ -8,6 +8,8 @@ export async function generatePayrollInvoicesPerOrg({
     orgId,
     period
 }:PayrollInvoicesPerOrg){
+    const {periodStart , periodEnd , month , year , daysInMonth} = period
+
 
     
 
