@@ -136,8 +136,8 @@ export default function StudentViewDialog({
           View
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
-        <DialogHeader>
+      <DialogContent className="max-h-[90vh] overflow-y-auto no-scrollbar sm:max-w-4xl">
+        <DialogHeader className="">
           <div className="flex items-start gap-3 pr-6">
             <Avatar className="size-14 shrink-0 ring-2 ring-primary/15">
               <AvatarImage

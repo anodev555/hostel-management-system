@@ -9,7 +9,6 @@ import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { deleteRoleAction } from "../action/delete-role"
-import { updateRoleAction } from "../action/update-role"
 import {
   editRoleSchema,
   type EditRoleSchemaType,
@@ -44,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FormSaveBar } from "../../../_components/form-save-bar"
+import { updateRoleAction } from "../action/update-role"
 
 const RESOURCES = Object.keys(orgPermissions) as [
   keyof typeof orgPermissions,
@@ -108,7 +108,7 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
     setIsLoading(true)
     try {
       const response = await updateRoleAction(values)
-      if (response.success) {
+      if (response.success) {                                           
         setConfirmOpen(false)
         form.reset(values)
         toast.success(response.message ?? "Role updated successfully")
@@ -162,8 +162,34 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8">
-      <Card className="">
+    <div className="mx-auto w-full max-w-7xl space-y-2">
+
+      <div>
+        <Button
+          onClick={() => router.push("/org/dashboard/roles")}
+          variant="outline"
+          size="xs"
+          className="px-3 py-4"
+        >
+         <ArrowLeft/> Back
+        </Button>
+        <div className="flex items-center justify-between">
+            <div>
+                <h1 className="capitalize text-2xl font-semibold">{role.role}</h1>
+                <p className="text-muted-foreground">Edit the role permissions and details</p>
+            </div>
+            <Button
+              onClick={() => setDeleteOpen(true)}
+              variant="destructive"
+              size="xs"
+              className="px-3 py-4"
+            >
+              <Trash2 className="size-4" /> Delete
+            </Button>
+        </div>
+      </div>
+      
+      {/* <Card className="">
         {" "}
         <CardHeader className="flex items-center justify-between">
           <div className="flex flex-col items-start justify-center">
@@ -222,16 +248,16 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card>
         <CardContent className="space-y-8">
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
             <FieldSet>
               <FieldGroup className="">
                 <Controller
                   control={form.control}
-                  name="name"
+                  name="name" 
                   render={({ field, fieldState }) => (
                     <Field data-invalid={!!fieldState.error}>
                       <FieldLabel htmlFor="role-name">Role name</FieldLabel>
@@ -256,7 +282,7 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
                 Update what this role can access in your hostel.
               </FieldDescription>
 
-              <div className="space-y-6">
+              <div className="space-y-6 ">
                 {RESOURCES.map((resource) => (
                   <Controller
                     key={resource}

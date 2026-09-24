@@ -24,6 +24,7 @@ export const authClient = createAuthClient({
     inferAdditionalFields({
       user: {
         contactPhone: { type: "string" },
+        isActive:{ type:"boolean"}
       },
     }),
     organizationClient({

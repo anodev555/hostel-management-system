@@ -12,7 +12,7 @@ export const orgPermissions = {
   tuition: ["create", "read", "update", "delete"],
   organization: ["read", "update"],
   invoice: ["read"],
-  payment: ["read","edit","update","delete"],
+  payment: ["read","update","delete"],
   billing: ["read"],
   expenses: ["create", "read", "update", "delete"],
 }

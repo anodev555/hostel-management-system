@@ -39,6 +39,7 @@ export const getAllStaffAction = withAuth<
         staffUsername: user.username,
         staffRole: member.role,
         staffPhone: user.contactPhone,
+        isActive:user.isActive,
         staffImage: user.image,
       })
       .from(member)

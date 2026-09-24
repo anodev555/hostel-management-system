@@ -6,6 +6,7 @@ export type StaffItem = {
   staffRole: string
   staffPhone: string | null
   staffImage: string | null
+  isActive: boolean
 }
 
 export type StaffSalaryContract = {

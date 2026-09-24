@@ -29,7 +29,7 @@ export default function StudentEditDialog({
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex h-[90dvh] w-[calc(100%-2rem)] max-w-5xl flex-col overflow-hidden sm:h-[80vh] sm:max-w-5xl md:h-[80vh] md:max-w-5xl">
+      <DialogContent className="flex h-[90dvh] w-[calc(100%-2rem)] max-w-5xl flex-col overflow-hidden sm:h-[80vh] sm:max-w-5xl md:h-[80vh] md:max-w-5xl no-scrollbar">
         <DialogHeader className="shrink-0">
           <DialogTitle>Edit Student</DialogTitle>
           <DialogDescription>Edit the student details</DialogDescription>
@@ -37,10 +37,10 @@ export default function StudentEditDialog({
 
         <Tabs
           defaultValue="info"
-          className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+          className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden"
         >
-          <TabsList className="flex h-10 shrink-0 justify-center gap-2">
-            <TabsTrigger value="info">
+          <TabsList className="flex h-10 shrink-0 justify-center gap-2 w-full">
+            <TabsTrigger value="info" className="">
               <Info />
               Info
             </TabsTrigger>
@@ -58,7 +58,7 @@ export default function StudentEditDialog({
             </TabsTrigger>
           </TabsList>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <TabsContent value="info">
+            <TabsContent value="info" >
               <StudentInfoForm student={student} />
             </TabsContent>
             <TabsContent value="room">

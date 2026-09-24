@@ -14,9 +14,12 @@ import { RoleItem } from "@/types/role/roles-type"
 import { PencilIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import RolesHeader from "./roles-header"
+import { formatDateYearMonth } from "../../lib/utils"
+import { usePermissions } from "@/lib/permissions/usePermissions"
 
 export default function RolesList({ roles }: { roles: RoleItem[] }) {
   const router = useRouter()
+  const {hasPermission}= usePermissions()
   return (
     <>
       <RolesHeader />
@@ -32,7 +35,8 @@ export default function RolesList({ roles }: { roles: RoleItem[] }) {
             <TableHead>Name</TableHead>
             <TableHead>Permissions</TableHead>
             <TableHead>Created By</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Create At</TableHead>
+           
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -46,7 +50,12 @@ export default function RolesList({ roles }: { roles: RoleItem[] }) {
                 ([_, value]) => value.length > 0
               ).length
               return (
-                <TableRow key={role.id}>
+                <TableRow key={role.id}
+                onClick={() => {
+                  if(hasPermission("ac","update"))
+                        router.push(`/org/dashboard/roles/${role.id}`)
+                      }}
+                >
                   <TableCell>
                     <span className="text-sm font-medium">{role.role}</span>
                   </TableCell>
@@ -60,18 +69,8 @@ export default function RolesList({ roles }: { roles: RoleItem[] }) {
                       {role.createdByUsername ?? "-"}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      size="icon-sm"
-                      variant="default"
-                      className="w-fit px-2"
-                      onClick={() => {
-                        router.push(`/org/dashboard/roles/${role.id}`)
-                      }}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                  <TableCell>{formatDateYearMonth(role.createdAt)}</TableCell>
+                 
                 </TableRow>
               )
             })

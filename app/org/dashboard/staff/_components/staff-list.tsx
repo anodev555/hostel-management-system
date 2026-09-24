@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { SearchBar } from "@/components/search-bar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { SearchBar } from "@/components/search-bar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   TableHeader,
   TableRow,
@@ -10,13 +11,31 @@ import {
   Table,
   TableCell,
   TableBody,
-} from "@/components/ui/table"
-import { StaffItem } from "@/types/staff-type"
-import { PencilIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
+} from "@/components/ui/table";
+import { usePermissions } from "@/lib/permissions/usePermissions";
+import { StaffItem } from "@/types/staff-type";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { updateStaffStatusAction } from "../action/update-staffstatus";
+import { toast } from "sonner";
 
 export default function StaffList({ staffs }: { staffs: StaffItem[] }) {
-  const router = useRouter()
+  const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const [isPending, startTransition] = useTransition();
+  const handleStaffStatusChange = async (checked: boolean, staffId: string) => {
+    if(isPending) return
+    startTransition(async () => {
+     const response = await updateStaffStatusAction({ status: checked, staffId });
+     if(response.success){
+      toast.success(response.message)
+      
+     }else{
+      toast.error(response.message)
+     }
+    });
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-2">
       <div className="flex flex-col gap-2">
@@ -33,13 +52,20 @@ export default function StaffList({ staffs }: { staffs: StaffItem[] }) {
             <TableHead>Username</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Phone</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {staffs.length > 0 ? (
             staffs.map((staff) => (
-              <TableRow key={staff.id}>
+              <TableRow
+                key={staff.id}
+                onClick={() => {
+                  if (hasPermission("staff", "update")) {
+                    router.push(`/org/dashboard/staff/${staff.id}`);
+                  }
+                }}
+              >
                 <TableCell>
                   <div className="flex flex-row items-center gap-2">
                     <Avatar>
@@ -64,15 +90,16 @@ export default function StaffList({ staffs }: { staffs: StaffItem[] }) {
                   <span>{staff.staffPhone}</span>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="default"
-                    size="icon-sm"
-                    onClick={() =>
-                      router.push(`/org/dashboard/staff/${staff.id}`)
-                    }
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </Button>
+                  <Switch
+                  disabled={isPending}
+                    checked={staff.isActive}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onCheckedChange={(checked) => {
+                      handleStaffStatusChange(checked, staff.id);
+                    }}
+                  />
                 </TableCell>
               </TableRow>
             ))
@@ -86,5 +113,5 @@ export default function StaffList({ staffs }: { staffs: StaffItem[] }) {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

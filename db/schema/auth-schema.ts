@@ -26,6 +26,7 @@ export const user = pgTable("user", {
   username: text("username").unique(),
   displayUsername: text("display_username"),
   banned: boolean("banned").default(false),
+  isActive:boolean("isActive").default(true),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
 })

@@ -93,10 +93,10 @@ export function TeamSwitcher({
                   )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
+                  <span className="truncate font-semibold">
                     {currentActiveOrganization?.name}
                   </span>
-                  <span className="truncate text-xs">
+                  <span className="truncate text-xs font-semibold">
                     {currentActiveOrganization?.location}
                   </span>
                 </div>
