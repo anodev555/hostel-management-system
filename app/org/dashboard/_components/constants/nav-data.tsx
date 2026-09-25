@@ -131,7 +131,7 @@ export const data = {
         },
         {
           title: "Payroll",
-          url: "#",
+          url: "/org/dashboard/payroll",
           icon: <BanknoteArrowUp />,
         },
       ],
@@ -150,6 +150,14 @@ export const data = {
       title: "Expenses",
       url: "/org/dashboard/expenses",
       icon: <BanknoteArrowDown />,
+      isActive: true,
+    },
+  ],
+  Payroll: [
+    {
+      title: "Payroll",
+      url: "/org/dashboard/payroll",
+      icon: <BanknoteArrowUp />,
       isActive: true,
     },
   ],
@@ -198,6 +206,12 @@ export const orgNavGroups: OrgNavGroup[] = [
     action: "read",
     items: data.Expenses,
   },
+  // {
+  //   label: "Payroll",
+  //   resource: "payroll",
+  //   action: "read",
+  //   items: data.Payroll,
+  // },
   // {
   //   label: "Roles",
   //   resource: "ac",

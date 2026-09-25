@@ -169,6 +169,13 @@
       "when": 1790318466105,
       "tag": "0023_thin_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790320538153,
+      "tag": "0024_watery_peter_parker",
+      "breakpoints": true
     }
   ]
 }

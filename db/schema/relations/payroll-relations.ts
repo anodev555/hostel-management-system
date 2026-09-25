@@ -3,6 +3,7 @@ import { member, user } from "../auth-schema"
 import { tuitionTeacher } from "../tuition-schema"
 import {
   payrollContract,
+  payrollDeduction,
   payrollInvoice,
   payrollInvoiceLineItem,
   payrollPayment,
@@ -36,6 +37,7 @@ export const payrollInvoiceRelations = relations(
     }),
     lineItems: many(payrollInvoiceLineItem),
     payments: many(payrollPayment),
+    deductions: many(payrollDeduction),
   })
 )
 
@@ -69,5 +71,20 @@ export const payrollPaymentRelations = relations(payrollPayment, ({ one }) => ({
   collectedByUser: one(user, {
     fields: [payrollPayment.collectedBy],
     references: [user.id],
+  }),
+}))
+
+export const payrollDeductionRelations = relations(payrollDeduction, ({ one }) => ({
+  invoice: one(payrollInvoice, {
+    fields: [payrollDeduction.payrollInvoiceId],
+    references: [payrollInvoice.id],
+  }),
+  member: one(member, {
+    fields: [payrollDeduction.memberId],
+    references: [member.id],
+  }),
+  teacher: one(tuitionTeacher, {
+    fields: [payrollDeduction.teacherId],
+    references: [tuitionTeacher.id],
   }),
 }))

@@ -379,3 +379,81 @@ export const payrollPayment = pgTable(
     ),
   ]
 )
+
+export const payrollDeductionReason = pgEnum("payroll_deduction_reason", [
+  "advance",
+  "loan",
+  "fine",
+  "other",
+])
+
+export const payrollDeduction = pgTable(
+  "payroll_deduction",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    payrollInvoiceId: uuid("payroll_invoice_id")
+      .notNull()
+      .references(() => payrollInvoice.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+
+    payeeType: payrollPayeeType("payee_type").notNull(),
+    memberId: text("member_id").references(() => member.id, {
+      onDelete: "cascade",
+    }),
+    teacherId: uuid("teacher_id").references(() => tuitionTeacher.id, {
+      onDelete: "cascade",
+    }),
+
+    reason: payrollDeductionReason("reason").notNull(),
+    description: text("description"),
+
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+
+    createdBy: text("created_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    updatedBy: text("updated_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("idx_payroll_deduction_invoice").on(table.payrollInvoiceId),
+    index("idx_payroll_deduction_org_payee").on(
+      table.organizationId,
+      table.payeeType,
+      table.memberId,
+      table.teacherId
+    ),
+
+    check("payroll_deduction_amount_positive", sql`${table.amount} > 0`),
+
+    check(
+      "payroll_deduction_payee_shape",
+      sql`(
+        ${table.payeeType} = 'staff'
+        AND ${table.memberId} IS NOT NULL
+        AND ${table.teacherId} IS NULL
+      ) OR (
+        ${table.payeeType} = 'teacher'
+        AND ${table.teacherId} IS NOT NULL
+        AND ${table.memberId} IS NULL
+      )`
+    ),
+  ]
+)
