@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm"
+import { sql } from "drizzle-orm";
 import {
   check,
   date,
@@ -9,12 +9,12 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from "drizzle-orm/pg-core"
+} from "drizzle-orm/pg-core";
 
-import { organization, user } from "./auth-schema"
-import { student } from "./student-schema"
-import { studentRoomAssignmentStatusEnum } from "./studentroomassigment-schema"
-import { tuitionPlan } from "./tuition-schema"
+import { organization, user } from "./auth-schema";
+import { student } from "./student-schema";
+import { studentRoomAssignmentStatusEnum } from "./studentroomassigment-schema";
+import { tuitionPlan } from "./tuition-schema";
 
 /** Reuse room/food assignment status — same assigned / released lifecycle */
 export const studentTuitionAssignment = pgTable(
@@ -39,7 +39,7 @@ export const studentTuitionAssignment = pgTable(
     tuitionPlanId: uuid("tuition_plan_id")
       .notNull()
       .references(() => tuitionPlan.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
 
@@ -92,28 +92,28 @@ export const studentTuitionAssignment = pgTable(
     check(
       "tuition_assigned_implies_not_released",
       sql`(${table.status} = 'assigned' AND ${table.releasedAt} IS NULL AND ${table.endDate} IS NULL)
-            OR (${table.status} = 'released' AND ${table.releasedAt} IS NOT NULL AND ${table.endDate} IS NOT NULL)`
+            OR (${table.status} = 'released' AND ${table.releasedAt} IS NOT NULL AND ${table.endDate} IS NOT NULL)`,
     ),
 
     check(
       "tuition_end_date_after_start_date",
-      sql`${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}`
+      sql`${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}`,
     ),
 
     index("idx_sta_org_student_status").on(
       table.organizationId,
       table.studentId,
-      table.status
+      table.status,
     ),
     index("idx_sta_tuition_plan_status").on(table.tuitionPlanId, table.status),
     index("idx_sta_student_history").on(table.studentId, table.startDate),
     index("idx_sta_org_dates").on(
       table.organizationId,
       table.startDate,
-      table.endDate
+      table.endDate,
     ),
-  ]
-)
+  ],
+);
 
 export type StudentTuitionAssignment =
-  typeof studentTuitionAssignment.$inferSelect
+  typeof studentTuitionAssignment.$inferSelect;

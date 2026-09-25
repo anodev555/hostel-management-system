@@ -1,9 +1,9 @@
-import { createAccessControl } from "better-auth/plugins/access"
-import { defaultStatements } from "better-auth/plugins/organization/access"
-import { ownerAc } from "better-auth/plugins/organization/access"
+import { createAccessControl } from "better-auth/plugins/access";
+import { defaultStatements } from "better-auth/plugins/organization/access";
+import { ownerAc } from "better-auth/plugins/organization/access";
 
 export const orgPermissions = {
-  student: ["create", "read", "update", "delete","collectpayment","checkout"],
+  student: ["create", "read", "update", "delete", "collectpayment", "checkout"],
   room: ["create", "read", "update", "delete"],
   ac: ["create", "read", "update", "delete"],
   staff: ["create", "read", "update", "delete"],
@@ -12,19 +12,20 @@ export const orgPermissions = {
   tuition: ["create", "read", "update", "delete"],
   organization: ["read", "update"],
   invoice: ["read"],
-  payment: ["read","update","delete"],
+  payment: ["read", "update", "delete"],
   billing: ["read"],
   expenses: ["create", "read", "update", "delete"],
-}
+  payroll: ["create", "read", "update", "delete"],
+};
 
 const statement = {
   ...defaultStatements,
   ...orgPermissions,
-} as const
+} as const;
 
-export const orgAc = createAccessControl(statement)
+export const orgAc = createAccessControl(statement);
 
 export const ownerRole = orgAc.newRole({
   ...ownerAc.statements,
   ...orgPermissions,
-})
+});
