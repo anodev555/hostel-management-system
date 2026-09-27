@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Breadcrumb,
@@ -7,12 +7,12 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { usePathname } from "next/navigation"
+} from "@/components/ui/breadcrumb";
+import { usePathname } from "next/navigation";
 
 export function BreadCrump() {
-  const pathname = usePathname()
-  console.log(pathname.split("/"))
+  const pathname = usePathname();
+  console.log(pathname.split("/"));
   return (
     <>
       <Breadcrumb>
@@ -27,5 +27,5 @@ export function BreadCrump() {
         </BreadcrumbList>
       </Breadcrumb>
     </>
-  )
+  );
 }

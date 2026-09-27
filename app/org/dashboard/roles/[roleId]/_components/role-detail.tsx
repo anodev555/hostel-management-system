@@ -1,27 +1,33 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Dialog as DialogPrimitive } from "radix-ui"
-import { ArrowLeft, Loader2, Shield, Trash2, TriangleAlert } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { toast } from "sonner"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Dialog as DialogPrimitive } from "radix-ui";
+import {
+  ArrowLeft,
+  Loader2,
+  Shield,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
-import { deleteRoleAction } from "../action/delete-role"
+import { deleteRoleAction } from "../action/delete-role";
 import {
   editRoleSchema,
   type EditRoleSchemaType,
-} from "../schema/edit-roleSchema"
-import { Button } from "@/components/ui/button"
+} from "../schema/edit-roleSchema";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -30,45 +36,45 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { orgPermissions } from "@/lib/org-permissions"
-import { cn } from "@/lib/utils"
-import type { RoleItem } from "@/types/role/roles-type"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { orgPermissions } from "@/lib/org-permissions";
+import { cn } from "@/lib/utils";
+import type { RoleItem } from "@/types/role/roles-type";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { FormSaveBar } from "../../../_components/form-save-bar"
-import { updateRoleAction } from "../action/update-role"
+} from "@/components/ui/dialog";
+import { FormSaveBar } from "../../../_components/form-save-bar";
+import { updateRoleAction } from "../action/update-role";
 
 const RESOURCES = Object.keys(orgPermissions) as [
   keyof typeof orgPermissions,
   ...(keyof typeof orgPermissions)[],
-]
-type PermissionAction = "create" | "read" | "update" | "delete"
-const ALL_ACTIONS: PermissionAction[] = ["create", "read", "update", "delete"]
+];
+type PermissionAction = "create" | "read" | "update" | "delete";
+const ALL_ACTIONS: PermissionAction[] = ["create", "read", "update", "delete"];
 function formatLabel(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1)
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function parsePermissionRecord(
-  permission: string
+  permission: string,
 ): EditRoleSchemaType["permissions"] {
-  const parsed = JSON.parse(permission) as Record<string, string[]>
+  const parsed = JSON.parse(permission) as Record<string, string[]>;
   return Object.fromEntries(
     RESOURCES.map((resource) => [
       resource,
       (parsed[resource] ?? []).filter((action): action is PermissionAction =>
         (orgPermissions[resource] as PermissionAction[]).includes(
-          action as PermissionAction
-        )
+          action as PermissionAction,
+        ),
       ),
-    ])
-  ) as EditRoleSchemaType["permissions"]
+    ]),
+  ) as EditRoleSchemaType["permissions"];
 }
 
 function roleToFormValues(role: RoleItem): EditRoleSchemaType {
@@ -76,94 +82,93 @@ function roleToFormValues(role: RoleItem): EditRoleSchemaType {
     roleId: role.id,
     name: role.role,
     permissions: parsePermissionRecord(role.permission),
-  }
+  };
 }
 
 function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "—"
+  if (!value) return "—";
   return new Date(value).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
+  });
 }
 
 export default function RoleDetail({ role }: { role: RoleItem }) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const defaultValues = useMemo(() => roleToFormValues(role), [role])
+  const defaultValues = useMemo(() => roleToFormValues(role), [role]);
 
   const form = useForm<EditRoleSchemaType>({
     resolver: zodResolver(editRoleSchema),
     defaultValues,
-  })
+  });
 
-  const { isDirty } = form.formState
-  const permissionsError = form.formState.errors.permissions
+  const { isDirty } = form.formState;
+  const permissionsError = form.formState.errors.permissions;
 
   async function onSubmit(values: EditRoleSchemaType) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await updateRoleAction(values)
-      if (response.success) {                                           
-        setConfirmOpen(false)
-        form.reset(values)
-        toast.success(response.message ?? "Role updated successfully")
-        router.refresh()
+      const response = await updateRoleAction(values);
+      if (response.success) {
+        setConfirmOpen(false);
+        form.reset(values);
+        toast.success(response.message ?? "Role updated successfully");
+        router.refresh();
       } else {
-        toast.error(response.message)
+        toast.error(response.message);
         if (response.fieldErrors) {
           Object.entries(response.fieldErrors).forEach(([field, error]) => {
             if (error.length > 1) {
               form.setError(field as keyof EditRoleSchemaType, {
                 message: error.join(", "),
-              })
+              });
             }
-          })
+          });
         }
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update role"
-      )
+        error instanceof Error ? error.message : "Failed to update role",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   function handleReset() {
-    form.reset(defaultValues)
+    form.reset(defaultValues);
   }
 
   async function handleRoleDelete(roleId: string) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const result = await deleteRoleAction({ roleId })
+      const result = await deleteRoleAction({ roleId });
 
       if (!result.success) {
-        toast.error(result.message)
-        return
+        toast.error(result.message);
+        return;
       }
 
-      toast.success(result.message ?? "Role deleted successfully")
-      router.push("/org/dashboard/roles")
-      router.refresh()
-      setDeleteOpen(false)
+      toast.success(result.message ?? "Role deleted successfully");
+      router.push("/org/dashboard/roles");
+      router.refresh();
+      setDeleteOpen(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete role"
-      )
+        error instanceof Error ? error.message : "Failed to delete role",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-2">
-
       <div>
         <Button
           onClick={() => router.push("/org/dashboard/roles")}
@@ -171,24 +176,26 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
           size="xs"
           className="px-3 py-4"
         >
-         <ArrowLeft/> Back
+          <ArrowLeft /> Back
         </Button>
         <div className="flex items-center justify-between">
-            <div>
-                <h1 className="capitalize text-2xl font-semibold">{role.role}</h1>
-                <p className="text-muted-foreground">Edit the role permissions and details</p>
-            </div>
-            <Button
-              onClick={() => setDeleteOpen(true)}
-              variant="destructive"
-              size="xs"
-              className="px-3 py-4"
-            >
-              <Trash2 className="size-4" /> Delete
-            </Button>
+          <div>
+            <h1 className="capitalize text-2xl font-semibold">{role.role}</h1>
+            <p className="text-muted-foreground text-sm">
+              Edit the role permissions and details
+            </p>
+          </div>
+          <Button
+            onClick={() => setDeleteOpen(true)}
+            variant="destructive"
+            size="xs"
+            className="px-3 py-4"
+          >
+            <Trash2 className="size-4" /> Delete
+          </Button>
         </div>
       </div>
-      
+
       {/* <Card className="">
         {" "}
         <CardHeader className="flex items-center justify-between">
@@ -257,7 +264,7 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
               <FieldGroup className="">
                 <Controller
                   control={form.control}
-                  name="name" 
+                  name="name"
                   render={({ field, fieldState }) => (
                     <Field data-invalid={!!fieldState.error}>
                       <FieldLabel htmlFor="role-name">Role name</FieldLabel>
@@ -289,7 +296,7 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
                     control={form.control}
                     name={`permissions.${resource}`}
                     render={({ field, fieldState }) => {
-                      const selected = field.value ?? []
+                      const selected = field.value ?? [];
 
                       return (
                         <Field data-invalid={!!fieldState.error}>
@@ -302,8 +309,8 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
                             {(
                               orgPermissions[resource] as PermissionAction[]
                             ).map((action) => {
-                              const checked = selected.includes(action)
-                              const inputId = `${resource}-${action}`
+                              const checked = selected.includes(action);
+                              const inputId = `${resource}-${action}`;
 
                               return (
                                 <label
@@ -311,7 +318,8 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
                                   className={cn(
                                     "flex w-full cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
                                     checked && "border-primary bg-primary/5",
-                                    isLoading && "cursor-not-allowed opacity-50"
+                                    isLoading &&
+                                      "cursor-not-allowed opacity-50",
                                   )}
                                 >
                                   <Checkbox
@@ -324,19 +332,21 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
                                           ? selected.includes(action)
                                             ? selected
                                             : [...selected, action]
-                                          : selected.filter((a) => a !== action)
-                                      field.onChange(next)
+                                          : selected.filter(
+                                              (a) => a !== action,
+                                            );
+                                      field.onChange(next);
                                     }}
                                   />
                                   {formatLabel(action)}
                                 </label>
-                              )
+                              );
                             })}
                           </div>
 
                           <FieldError>{fieldState.error?.message}</FieldError>
                         </Field>
-                      )
+                      );
                     }}
                   />
                 ))}
@@ -397,5 +407,5 @@ export default function RoleDetail({ role }: { role: RoleItem }) {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

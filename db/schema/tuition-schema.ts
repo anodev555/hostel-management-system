@@ -8,10 +8,10 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from "drizzle-orm/pg-core"
-import { organization, user } from "./auth-schema"
+} from "drizzle-orm/pg-core";
+import { organization, user } from "./auth-schema";
 
-export const teacherStatus = pgEnum("teacher_status", ["active", "inactive"])
+export const teacherStatus = pgEnum("teacher_status", ["active", "inactive"]);
 export const tuitionTeacher = pgTable(
   "tuition_teacher",
   {
@@ -47,10 +47,10 @@ export const tuitionTeacher = pgTable(
   },
   (table) => [
     index("tuition_teacher_organization_id_idx").on(table.organizationId),
-  ]
-)
+  ],
+);
 
-export const tuitionStatus = pgEnum("tuition_status", ["active", "inactive"])
+export const tuitionStatus = pgEnum("tuition_status", ["active", "inactive"]);
 
 export const tuitionPlan = pgTable(
   "tuition_plan",
@@ -65,7 +65,7 @@ export const tuitionPlan = pgTable(
     teacherId: uuid("teacher_id")
       .notNull()
       .references(() => tuitionTeacher.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
     name: varchar("name", { length: 255 }).notNull(),
@@ -93,15 +93,15 @@ export const tuitionPlan = pgTable(
   (table) => [
     uniqueIndex("tuition_plan_org_name_idx").on(
       table.organizationId,
-      table.name
+      table.name,
     ),
     index("tuition_plan_organization_id_idx").on(
       table.organizationId,
-      table.status
+      table.status,
     ),
     index("tuition_plan_teacher_id_idx").on(table.teacherId, table.status),
-  ]
-)
+  ],
+);
 
-export type TuitionTeacher = typeof tuitionTeacher.$inferSelect
-export type TuitionPlan = typeof tuitionPlan.$inferSelect
+export type TuitionTeacher = typeof tuitionTeacher.$inferSelect;
+export type TuitionPlan = typeof tuitionPlan.$inferSelect;

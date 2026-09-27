@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { User, X } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { Controller, useFormContext } from "react-hook-form"
+import { User, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useFormContext } from "react-hook-form";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -14,52 +14,52 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
-import type { AdmissionFormType } from "../schema/admission-schema"
+import type { AdmissionFormType } from "../schema/admission-schema";
 import {
   genderValues,
   PROFILE_IMAGE_ACCEPT,
   PROFILE_IMAGE_MAX_SIZE_BYTES,
   profileImageSchema,
-} from "../schema/student-profile"
+} from "../schema/student-profile";
 
 function formatGenderLabel(value: (typeof genderValues)[number]) {
-  return value.charAt(0).toUpperCase() + value.slice(1)
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function useObjectUrl(file: File | undefined) {
-  const [url, setUrl] = useState<string | null>(null)
+  const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!file) {
-      setUrl(null)
-      return
+      setUrl(null);
+      return;
     }
 
-    const objectUrl = URL.createObjectURL(file)
-    setUrl(objectUrl)
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
 
     return () => {
-      URL.revokeObjectURL(objectUrl)
-    }
-  }, [file])
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
 
-  return url
+  return url;
 }
 
 function ProfileImageInput({
@@ -68,50 +68,50 @@ function ProfileImageInput({
   onBlur,
   errorMessage,
 }: {
-  value: File | undefined
-  onChange: (file: File | undefined) => void
-  onBlur: () => void
-  errorMessage?: string
+  value: File | undefined;
+  onChange: (file: File | undefined) => void;
+  onBlur: () => void;
+  errorMessage?: string;
 }) {
-  const { setError, clearErrors } = useFormContext<AdmissionFormType>()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const previewUrl = useObjectUrl(value)
+  const { setError, clearErrors } = useFormContext<AdmissionFormType>();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const previewUrl = useObjectUrl(value);
 
   function validateSelectedFile(file: File | undefined) {
-    const result = profileImageSchema.safeParse(file)
+    const result = profileImageSchema.safeParse(file);
     if (!result.success) {
-      const message = result.error.issues[0]?.message ?? "Invalid image file"
-      setError("profileImage", { message })
-      return false
+      const message = result.error.issues[0]?.message ?? "Invalid image file";
+      setError("profileImage", { message });
+      return false;
     }
 
-    clearErrors("profileImage")
-    return true
+    clearErrors("profileImage");
+    return true;
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
 
     if (!file) {
-      onChange(undefined)
-      setError("profileImage", { message: "Profile image is required" })
-      return
+      onChange(undefined);
+      setError("profileImage", { message: "Profile image is required" });
+      return;
     }
 
     if (!validateSelectedFile(file)) {
-      onChange(undefined)
-      event.target.value = ""
-      return
+      onChange(undefined);
+      event.target.value = "";
+      return;
     }
 
-    onChange(file)
+    onChange(file);
   }
 
   function handleRemoveImage() {
-    onChange(undefined)
-    setError("profileImage", { message: "Profile image is required" })
+    onChange(undefined);
+    setError("profileImage", { message: "Profile image is required" });
     if (inputRef.current) {
-      inputRef.current.value = ""
+      inputRef.current.value = "";
     }
   }
 
@@ -167,11 +167,11 @@ function ProfileImageInput({
       </div>
       <FieldError>{errorMessage}</FieldError>
     </Field>
-  )
+  );
 }
 
 function ProfileImageField() {
-  const { control } = useFormContext<AdmissionFormType>()
+  const { control } = useFormContext<AdmissionFormType>();
 
   return (
     <Controller
@@ -186,13 +186,13 @@ function ProfileImageField() {
         />
       )}
     />
-  )
+  );
 }
 
 export default function StudentProfile() {
-  const { control } = useFormContext<AdmissionFormType>()
-  const [dobOpen, setDobOpen] = useState(false)
-  const [admissionDateOpen, setAdmissionDateOpen] = useState(false)
+  const { control } = useFormContext<AdmissionFormType>();
+  const [dobOpen, setDobOpen] = useState(false);
+  const [admissionDateOpen, setAdmissionDateOpen] = useState(false);
 
   return (
     <div className="space-y-8">
@@ -349,8 +349,8 @@ export default function StudentProfile() {
                       defaultMonth={field.value ? field.value : undefined}
                       captionLayout="dropdown"
                       onSelect={(date) => {
-                        field.onChange(date)
-                        setDobOpen(false)
+                        field.onChange(date);
+                        setDobOpen(false);
                       }}
                     />
                   </PopoverContent>
@@ -376,6 +376,7 @@ export default function StudentProfile() {
                 <Input
                   id="student-admission-number"
                   placeholder="ADM-2026-001"
+                  readOnly
                   aria-invalid={!!fieldState.error}
                   {...field}
                 />
@@ -417,8 +418,8 @@ export default function StudentProfile() {
                       defaultMonth={field.value ? field.value : undefined}
                       captionLayout="dropdown"
                       onSelect={(date) => {
-                        field.onChange(date)
-                        setDobOpen(false)
+                        field.onChange(date);
+                        setDobOpen(false);
                       }}
                     />
                   </PopoverContent>
@@ -612,5 +613,5 @@ export default function StudentProfile() {
         </FieldGroup>
       </FieldSet> */}
     </div>
-  )
+  );
 }
