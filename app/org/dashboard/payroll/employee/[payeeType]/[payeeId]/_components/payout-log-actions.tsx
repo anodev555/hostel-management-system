@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,40 +9,40 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
   FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { usePermissions } from "@/lib/permissions/usePermissions"
-import { PayrollPayoutRow } from "@/types/payroll-types"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2, PencilIcon, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { toast } from "sonner"
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { usePermissions } from "@/lib/permissions/usePermissions";
+import { PayrollPayoutRow } from "@/types/payroll-types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, PencilIcon, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import {
   deletePayrollPayout,
   updatePayrollPayout,
-} from "../../action/payroll"
+} from "../../../../action/payroll";
 import {
   updatePayrollPayoutSchema,
   UpdatePayrollPayoutSchemaType,
-} from "../../schema/payroll-schema"
-import ConfirmDialog from "./confirm-dialog"
+} from "../../../../schema/payroll-schema";
+import ConfirmDialog from "./confirm-dialog";
 
 const PAYMENT_METHODS = [
   { label: "Cash", value: "cash" },
@@ -51,23 +51,23 @@ const PAYMENT_METHODS = [
   { label: "Esewa", value: "esewa" },
   { label: "Khalti", value: "khalti" },
   { label: "Other", value: "other" },
-]
+];
 
 export default function PayoutLogActions({
   payout,
 }: {
-  payout: PayrollPayoutRow
+  payout: PayrollPayoutRow;
 }) {
-  const { hasPermission } = usePermissions()
-  const router = useRouter()
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { hasPermission } = usePermissions();
+  const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const canEdit = hasPermission("payroll", "update")
-  const canDelete = hasPermission("payroll", "delete")
+  const canEdit = hasPermission("payroll", "update");
+  const canDelete = hasPermission("payroll", "delete");
 
-  if (!canEdit && !canDelete) return null
+  if (!canEdit && !canDelete) return null;
 
   const defaultValues = useMemo(
     () => ({
@@ -78,59 +78,63 @@ export default function PayoutLogActions({
       notes: payout.notes ?? "",
       receivedBy: payout.receivedBy ?? "",
     }),
-    [payout]
-  )
+    [payout],
+  );
 
   const form = useForm<UpdatePayrollPayoutSchemaType>({
     resolver: zodResolver(updatePayrollPayoutSchema),
     defaultValues,
-  })
+  });
 
   async function handleEdit(data: UpdatePayrollPayoutSchemaType) {
-    if (isLoading) return
+    if (isLoading) return;
     try {
-      setIsLoading(true)
-      const response = await updatePayrollPayout(data)
+      setIsLoading(true);
+      const response = await updatePayrollPayout(data);
       if (response.success) {
-        setEditOpen(false)
-        toast.success(response.message ?? "Payout updated")
-        router.refresh()
+        setEditOpen(false);
+        toast.success(response.message ?? "Payout updated");
+        router.refresh();
       } else {
-        toast.error(response.message)
+        toast.error(response.message);
         if (response.fieldErrors) {
           Object.entries(response.fieldErrors).forEach(([field, messages]) => {
             form.setError(field as keyof UpdatePayrollPayoutSchemaType, {
               type: "manual",
               message: messages.join(", "),
-            })
-          })
+            });
+          });
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong")
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function handleDelete() {
-    if (isLoading) return
+    if (isLoading) return;
     try {
-      setIsLoading(true)
-      const response = await deletePayrollPayout({ payoutId: payout.id })
+      setIsLoading(true);
+      const response = await deletePayrollPayout({ payoutId: payout.id });
       if (response.success) {
-        setDeleteOpen(false)
-        toast.success(response.message ?? "Payout deleted")
-        router.refresh()
+        setDeleteOpen(false);
+        toast.success(response.message ?? "Payout deleted");
+        router.refresh();
       } else {
-        toast.error(response.message)
-        setDeleteOpen(false)
+        toast.error(response.message);
+        setDeleteOpen(false);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong")
-      setDeleteOpen(false)
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
+      setDeleteOpen(false);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -139,7 +143,7 @@ export default function PayoutLogActions({
       {canEdit ? (
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="default" size="icon">
               <PencilIcon className="size-4" />
             </Button>
           </DialogTrigger>
@@ -152,9 +156,7 @@ export default function PayoutLogActions({
               </DialogDescription>
             </DialogHeader>
 
-            <form
-              onSubmit={form.handleSubmit(handleEdit, () => {})}
-            >
+            <form onSubmit={form.handleSubmit(handleEdit, () => {})}>
               <input type="hidden" {...form.register("payoutId")} />
               <FieldSet>
                 <FieldGroup>
@@ -299,7 +301,7 @@ export default function PayoutLogActions({
       {canDelete ? (
         <>
           <Button
-            variant="ghost"
+            variant="destructive"
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={() => setDeleteOpen(true)}
@@ -318,5 +320,5 @@ export default function PayoutLogActions({
         </>
       ) : null}
     </div>
-  )
+  );
 }

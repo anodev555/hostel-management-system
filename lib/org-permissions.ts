@@ -15,7 +15,7 @@ export const orgPermissions = {
   payment: ["read", "update", "delete"],
   billing: ["read"],
   expenses: ["create", "read", "update", "delete"],
-  payroll: ["create", "read", "update", "delete"],
+  payroll: ["create", "read", "update", "delete", "pay"],
 };
 
 const statement = {

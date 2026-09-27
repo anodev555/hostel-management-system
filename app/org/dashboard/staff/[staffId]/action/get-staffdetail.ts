@@ -1,15 +1,15 @@
-"use server"
+"use server";
 
-import db from "@/db"
-import { member, user } from "@/db/schema"
-import { payrollContract } from "@/db/schema/payroll-schema"
-import { withAuth } from "@/lib/withAuth"
-import { ActionResponse } from "@/types/action-response"
-import { StaffData, StaffDetail } from "@/types/staff-type"
-import { eq, and, desc } from "drizzle-orm"
+import db from "@/db";
+import { member, user } from "@/db/schema";
+import { payrollContract } from "@/db/schema/payroll-schema";
+import { withAuth } from "@/lib/withAuth";
+import { ActionResponse } from "@/types/action-response";
+import { StaffData, StaffDetail } from "@/types/staff-type";
+import { eq, and, desc } from "drizzle-orm";
 type GetStaffDetailProps = {
-  staffId: string
-}
+  staffId: string;
+};
 
 export const getStaffDetailAction = withAuth<
   GetStaffDetailProps,
@@ -26,14 +26,14 @@ export const getStaffDetailAction = withAuth<
       return {
         success: false,
         message: "Organization not found",
-      }
+      };
     }
-    const staffId = data.staffId
+    const staffId = data.staffId;
     if (!staffId) {
       return {
         success: false,
         message: "Staff id is required",
-      }
+      };
     }
     const [staffDetail] = await db
       .select({
@@ -58,21 +58,21 @@ export const getStaffDetailAction = withAuth<
           eq(member.id, payrollContract.memberId),
           eq(payrollContract.payeeType, "staff"),
           eq(payrollContract.organizationId, organizationId as string),
-          eq(payrollContract.status, "active")
-        )
+          eq(payrollContract.status, "active"),
+        ),
       )
       .where(
         and(
           eq(member.id, staffId),
-          eq(member.organizationId, organizationId as string)
-        )
-      )
+          eq(member.organizationId, organizationId as string),
+        ),
+      );
 
     if (!staffDetail) {
       return {
         success: false,
         message: "Staff not found",
-      }
+      };
     }
 
     // get salary contract
@@ -89,10 +89,10 @@ export const getStaffDetailAction = withAuth<
         and(
           eq(payrollContract.memberId, staffId),
           eq(payrollContract.organizationId, organizationId as string),
-          eq(payrollContract.payeeType, "staff")
-        )
+          eq(payrollContract.payeeType, "staff"),
+        ),
       )
-      .orderBy(desc(payrollContract.createdAt))
+      .orderBy(desc(payrollContract.createdAt));
 
     return {
       success: true,
@@ -100,12 +100,12 @@ export const getStaffDetailAction = withAuth<
         staffDetail: staffDetail,
         salaryHistory: salaryContract,
       },
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to get staff detail",
-    }
+    };
   }
-})
+});

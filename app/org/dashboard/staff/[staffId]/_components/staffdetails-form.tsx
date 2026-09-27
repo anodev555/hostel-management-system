@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StaffData, StaffDetail } from "@/types/staff-type";
-import StaffHeader from "./staff-header";
 import StaffProfile from "./staff-profile";
 import StaffSalary from "./staff-salary";
 import StaffSecurity from "./staff-security";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import DeleteStaffDialog from "./staff-deletedialog";
 
 export default function StaffDetailsForm({
   staffData,
@@ -56,9 +56,10 @@ export default function StaffDetailsForm({
               </p>
             </div>
           </div>
-          <Button
-          variant="destructive"
-          >delete</Button>
+          <DeleteStaffDialog
+            userId={staffData.staffDetail.userId}
+            memberId={staffData.staffDetail.id}
+          />
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">

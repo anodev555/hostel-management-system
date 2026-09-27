@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { StaffDetail } from "@/types/staff-type"
+import { StaffDetail } from "@/types/staff-type";
 import {
   staffProfileSchema,
   StaffProfileSchemaType,
-} from "../schema/staffProfile"
-import { Controller, useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+} from "../schema/staffProfile";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Field,
   FieldDescription,
@@ -15,44 +15,44 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useEffect, useMemo, useState } from "react"
+} from "@/components/ui/select";
+import { useEffect, useMemo, useState } from "react";
 import {
   getRolesDataAction,
   RoleData,
-} from "../../../roles/action/public-getroles"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import { Loader2, TriangleAlert } from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from "../../../roles/action/public-getroles";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Loader2, TriangleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { updateStaffProfileAction } from "../action/update-staffprofile"
-import { useRouter } from "next/navigation"
+} from "@/components/ui/dialog";
+import { updateStaffProfileAction } from "../action/update-staffprofile";
+import { useRouter } from "next/navigation";
 
 interface StaffProfileProps {
-  userId: string
-  name: string
-  email: string
-  username: string
-  contactPhone: string
-  role: string
+  userId: string;
+  name: string;
+  email: string;
+  username: string;
+  contactPhone: string;
+  role: string;
 }
 function formatRoleLabel(role: string) {
-  return role.charAt(0).toUpperCase() + role.slice(1)
+  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function staffToFormValues(staff: StaffProfileProps) {
@@ -63,88 +63,88 @@ function staffToFormValues(staff: StaffProfileProps) {
     username: staff.username,
     contactPhone: staff.contactPhone,
     role: staff.role.toLowerCase(),
-  }
+  };
 }
 
 export default function StaffProfile({
   staffDetail,
 }: {
-  staffDetail: StaffProfileProps
+  staffDetail: StaffProfileProps;
 }) {
-  const [roles, setRoles] = useState<RoleData[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingRoles, setIsLoadingRoles] = useState(true)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const router = useRouter()
-  console.log(staffDetail)
+  const [roles, setRoles] = useState<RoleData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const router = useRouter();
+  console.log(staffDetail);
   const defaultValues = useMemo(
     () => staffToFormValues(staffDetail),
-    [staffDetail]
-  )
+    [staffDetail],
+  );
   const form = useForm<StaffProfileSchemaType>({
     resolver: zodResolver(staffProfileSchema),
     defaultValues: defaultValues,
-  })
+  });
 
   useEffect(() => {
     async function loadRoles() {
       try {
-        const response = await getRolesDataAction()
+        const response = await getRolesDataAction();
         if (response.success) {
-          setRoles(response.data)
+          setRoles(response.data);
         } else {
-          toast.error(response.message)
+          toast.error(response.message);
         }
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to load roles"
-        )
+          error instanceof Error ? error.message : "Failed to load roles",
+        );
       } finally {
-        setIsLoadingRoles(false)
+        setIsLoadingRoles(false);
       }
     }
 
-    loadRoles()
-  }, [])
+    loadRoles();
+  }, []);
 
   function handleReset() {
-    form.reset()
+    form.reset();
   }
 
-  const isDirty = form.formState.isDirty
-  const isFormDisabled = isLoadingRoles || isLoading
+  const isDirty = form.formState.isDirty;
+  const isFormDisabled = isLoadingRoles || isLoading;
 
   async function onSubmit(values: StaffProfileSchemaType) {
     try {
-      setIsLoading(true)
-      const response = await updateStaffProfileAction(values)
+      setIsLoading(true);
+      const response = await updateStaffProfileAction(values);
       if (response.success) {
-        form.reset(values)
-        setConfirmOpen(false)
-        toast.success(response.message)
-        router.refresh()
+        form.reset(values);
+        setConfirmOpen(false);
+        toast.success(response.message);
+        router.refresh();
       } else {
-        setConfirmOpen(false)
-        toast.error(response.message)
+        setConfirmOpen(false);
+        toast.error(response.message);
         if (response.fieldErrors) {
           Object.entries(response.fieldErrors).forEach(([field, error]) => {
             if (error.length > 1) {
               form.setError(field as keyof StaffProfileSchemaType, {
                 message: error.join(", "),
-              })
+              });
             }
-          })
+          });
         }
       }
     } catch (error) {
-      setConfirmOpen(false)
+      setConfirmOpen(false);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update staff profile"
-      )
+          : "Failed to update staff profile",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -267,7 +267,7 @@ export default function StaffProfile({
           "fixed inset-x-0 bottom-1 z-40 flex justify-center px-4 pb-4 transition-all duration-200",
           isDirty
             ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-5 opacity-0"
+            : "pointer-events-none translate-y-5 opacity-0",
         )}
       >
         <div className="mx-auto flex w-fit items-center justify-between gap-4 rounded-xl border border-(--table-border) bg-muted/50 px-2 py-2">
@@ -326,5 +326,5 @@ export default function StaffProfile({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

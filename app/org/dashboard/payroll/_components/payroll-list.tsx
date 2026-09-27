@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,68 +11,73 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { PaginationControls } from "@/components/pagination-controls"
-import { PayrollEmployeeRow, PayrollSummary } from "@/types/payroll-types"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/table";
+import { PaginationControls } from "@/components/pagination-controls";
+import { PayrollEmployeeRow, PayrollSummary } from "@/types/payroll-types";
+import { cn } from "@/lib/utils";
 import {
   AlertCircleIcon,
-  ArrowRight,
   CircleCheckIcon,
   ClockAlert,
   ReceiptIcon,
   Search,
   X,
-} from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { useCallback, useState } from "react"
-import { formatRupee, formatStatus } from "../../lib/utils"
-import { SummaryBox } from "../../invoices/_components/utils"
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
+import { formatRupee, formatStatus } from "../../lib/utils";
+import { SummaryBox } from "../../invoices/_components/utils";
+import { usePermissions } from "@/lib/permissions/usePermissions";
 
 export default function PayrollList({
   summary,
   employees,
 }: {
-  summary: PayrollSummary
-  employees: PayrollEmployeeRow[]
+  summary: PayrollSummary;
+  employees: PayrollEmployeeRow[];
 }) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [search, setSearch] = useState(searchParams.get("search") ?? "")
+  const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
 
   const applySearch = useCallback(
     (value: string | undefined) => {
-      const params = new URLSearchParams(searchParams.toString())
-      // Keep only search + pagination params; drop legacy filter params
-      params.delete("payeeType")
-      params.delete("status")
+      const params = new URLSearchParams(searchParams.toString());
       if (value === undefined || value === "") {
-        params.delete("search")
+        params.delete("search");
       } else {
-        params.set("search", value)
+        params.set("search", value);
       }
-      params.delete("page")
-      const query = params.toString()
-      router.push(query ? `/org/dashboard/payroll?${query}` : "/org/dashboard/payroll")
+      params.delete("page");
+      const query = params.toString();
+      router.push(
+        query ? `/org/dashboard/payroll?${query}` : "/org/dashboard/payroll",
+      );
     },
-    [router, searchParams]
-  )
+    [router, searchParams],
+  );
 
   function handleSearchSubmit() {
-    applySearch(search.trim() || undefined)
+    applySearch(search.trim() || undefined);
   }
 
   function clearSearch() {
-    setSearch("")
-    applySearch(undefined)
+    setSearch("");
+    applySearch(undefined);
   }
 
-  const hasSearch = (searchParams.get("search") ?? "") !== ""
+  const hasSearch = (searchParams.get("search") ?? "") !== "";
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4">
-      {/* Summary */}
+      <div>
+        <h1 className="text-2xl font-semibold">Payroll</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage the salary payment, deduction and calulation
+        </p>
+      </div>
+
       <Card>
         <CardContent className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryBox
@@ -110,7 +115,7 @@ export default function PayrollList({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") handleSearchSubmit()
+              if (event.key === "Enter") handleSearchSubmit();
             }}
             placeholder="Search staff or teacher by name…"
             className="pl-9"
@@ -125,98 +130,66 @@ export default function PayrollList({
         ) : null}
       </div>
 
-      {/* Table — staff + remaining */}
+      {/* Table — one row per staff / teacher */}
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-44">Staff name</TableHead>
-            <TableHead className="text-right">Gross</TableHead>
-            <TableHead className="text-right">Deductions</TableHead>
-            <TableHead className="text-right">Net</TableHead>
-            <TableHead className="text-right">Paid</TableHead>
-            <TableHead className="text-right">Remaining to pay</TableHead>
+            <TableHead className="min-w-44">Name</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead className="">Remaining to pay</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {employees.length > 0 ? (
-            employees.map((employee) => (
-              <TableRow key={`${employee.payeeType}:${employee.payeeId}`}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="size-9">
-                      <AvatarImage
-                        src={
-                          employee.payeeImage
-                            ? `/${employee.payeeImage}`
-                            : undefined
-                        }
-                      />
-                      <AvatarFallback>
-                        {employee.payeeName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {employee.payeeName}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {employee.payeeRole ?? employee.payeeType}
-                        {employee.outstandingCount > 0
-                          ? ` · ${employee.outstandingCount} due`
-                          : ` · ${employee.paidCount} paid`}
-                      </p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatRupee(employee.totalGross)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-destructive">
-                  -{formatRupee(employee.deductionTotal)}
-                </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums">
-                  {formatRupee(employee.totalNet)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {formatRupee(employee.totalPaid)}
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    "text-right font-semibold tabular-nums",
-                    employee.isOverDue
-                      ? "text-warning"
-                      : Number(employee.totalRemaining) > 0
-                        ? "text-destructive"
-                        : "text-emerald-600"
-                  )}
+            employees.map((employee) => {
+              const cleared = Number(employee.totalRemaining) <= 0;
+              return (
+                <TableRow
+                  key={`${employee.payeeType}:${employee.payeeId}`}
+
+                  onClick={() => {
+                    if (hasPermission("payroll", "read")) {
+                      router.push(
+                        `/org/dashboard/payroll/employee/${employee.payeeType}/${employee.payeeId}`,
+                      );
+                    }
+                  }}
                 >
-                  {formatRupee(employee.totalRemaining)}
-                  {employee.isOverDue ? (
-                    <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
-                      Past due date
-                    </span>
-                  ) : null}
-                </TableCell>
-                <TableCell>{formatStatus(employee.status)}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link
-                      href={`/org/dashboard/payroll/employee/${employee.payeeType}/${employee.payeeId}`}
-                    >
-                      View
-                      <ArrowRight className="ml-1 size-3.5" />
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
+                  <TableCell className="font-medium">
+                    {employee.payeeName}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="capitalize">
+                      {employee.payeeType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {cleared ? (
+                      <Badge className="bg-emerald-500 text-white">
+                        Cleared
+                      </Badge>
+                    ) : (
+                      formatStatus(employee.status)
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      " font-semibold tabular-nums",
+                      cleared
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-destructive",
+                    )}
+                  >
+                    {formatRupee(employee.totalRemaining)}
+                  </TableCell>
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
-              <TableCell colSpan={8} className="h-24 text-center">
-                No staff found for this filter. Outstanding (unpaid + partial)
-                dues appear here by default.
+              <TableCell colSpan={6} className="h-24 text-center">
+                No staff or teachers found. Try a different search.
               </TableCell>
             </TableRow>
           )}
@@ -228,5 +201,5 @@ export default function PayrollList({
         perPageOptions={[5, 10, 15, 20]}
       />
     </div>
-  )
+  );
 }
