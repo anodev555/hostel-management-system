@@ -1,21 +1,23 @@
-import type { ReactNode } from "react"
+import type { ReactNode } from "react";
 
 export type NavItem = {
-  title: string
-  url: string
-  icon?: ReactNode
-}
+  title: string;
+  url: string;
+  icon?: ReactNode;
+  resource?: string;
+  action?: string;
+};
 
-export type NavSubItem = NavItem
+export type NavSubItem = NavItem;
 
 export type NavGroupItem = NavItem & {
-  isActive?: boolean
-  items?: NavSubItem[]
-}
+  isActive?: boolean;
+
+  items?: NavSubItem[];
+};
 
 export type OrgNavGroup = {
-  label: string
-  resource: string
-  action: string
-  items: NavGroupItem[]
-}
+  label: string;
+
+  items: NavGroupItem[];
+};

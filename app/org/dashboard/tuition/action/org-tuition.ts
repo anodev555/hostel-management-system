@@ -1,17 +1,17 @@
-"use server"
+"use server";
 
-import db from "@/db"
+import db from "@/db";
 import {
   student,
   studentTuitionAssignment,
   tuitionPlan,
   tuitionTeacher,
-} from "@/db/schema"
-import { withAuth } from "@/lib/withAuth"
-import { ActionResponse } from "@/types/action-response"
-import { eq, and, isNull, count, ilike } from "drizzle-orm"
-import { parsePage, parsePerPage } from "../../lib/utils"
-import { GroupedTuitionPlan } from "@/types/tuition-types"
+} from "@/db/schema";
+import { withAuth } from "@/lib/withAuth";
+import { ActionResponse } from "@/types/action-response";
+import { eq, and, isNull, count, ilike } from "drizzle-orm";
+import { parsePage, parsePerPage } from "../../lib/utils";
+import { GroupedTuitionPlan } from "@/types/tuition-types";
 
 export const getOrgTuitions = withAuth<
   void,
@@ -19,7 +19,7 @@ export const getOrgTuitions = withAuth<
 >({
   roles: ["orgUser"],
   permissions: {
-    tuition: ["read"],
+    student: ["read"],
   },
   requireActiveOrg: true,
 })(async ({
@@ -31,7 +31,7 @@ export const getOrgTuitions = withAuth<
       return {
         success: false,
         message: "Organization not found",
-      }
+      };
     }
 
     const tuitionRows = await db
@@ -53,23 +53,23 @@ export const getOrgTuitions = withAuth<
       .innerJoin(student, eq(studentTuitionAssignment.studentId, student.id))
       .innerJoin(
         tuitionPlan,
-        eq(studentTuitionAssignment.tuitionPlanId, tuitionPlan.id)
+        eq(studentTuitionAssignment.tuitionPlanId, tuitionPlan.id),
       )
       .innerJoin(tuitionTeacher, eq(tuitionPlan.teacherId, tuitionTeacher.id))
       .where(
         and(
           eq(studentTuitionAssignment.organizationId, organizationId),
           eq(studentTuitionAssignment.status, "assigned"),
-          isNull(studentTuitionAssignment.endDate)
-        )
-      )
+          isNull(studentTuitionAssignment.endDate),
+        ),
+      );
 
     //grouping data by tuition plan id
 
-    const planMap = new Map<string, GroupedTuitionPlan>()
+    const planMap = new Map<string, GroupedTuitionPlan>();
 
     for (const row of tuitionRows) {
-      let plan = planMap.get(row.tuitionPlanId)
+      let plan = planMap.get(row.tuitionPlanId);
       if (!plan) {
         plan = {
           tuitionPlanId: row.tuitionPlanId,
@@ -80,26 +80,26 @@ export const getOrgTuitions = withAuth<
           teacherPhone: row.teacherPhone || "",
           teacherAddress: row.teacherAddress || "",
           students: [],
-        }
-        planMap.set(row.tuitionPlanId, plan)
+        };
+        planMap.set(row.tuitionPlanId, plan);
       }
       plan.students.push({
         studentId: row.studentId,
         studentName: row.studentName,
         studentProfileImage: row.studentProfileImage || "",
         studentPhone: row.studentPhone || "",
-      })
+      });
     }
-    const plans = Array.from(planMap.values())
+    const plans = Array.from(planMap.values());
     return {
       success: true,
       data: plans,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Something went wrong",
-    }
+    };
   }
-})
+});

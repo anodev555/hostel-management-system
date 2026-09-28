@@ -19,7 +19,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import type { NavGroupItem } from "./nav-types";
+import type { NavGroupItem, NavItem } from "./nav-types";
+import { usePermissions } from "@/lib/permissions/usePermissions";
 
 interface NavGroupProps {
   label: string;
@@ -27,17 +28,38 @@ interface NavGroupProps {
 }
 
 function isRouteActive(pathname: string, url: string) {
+  if (url === "#") return false;
   return pathname === url || pathname.startsWith(`${url}/`);
 }
 
 export function NavGroup({ label, items }: NavGroupProps) {
   const pathname = usePathname();
+  const { hasPermission } = usePermissions();
+
+  // Leaf/sub without resource+action = hidden (secure default).
+  // Parent "#" nodes carry no perms — visible only if >=1 child visible.
+  const canView = (item: NavItem) => {
+    if (!item.resource || !item.action) return false;
+    return hasPermission(item.resource, item.action);
+  };
+
+  const visibleItems = items.flatMap((item) => {
+    const hasChildren = !!item.items?.length;
+    if (hasChildren) {
+      const visibleSubs = item.items!.filter(canView);
+      if (visibleSubs.length === 0) return [];
+      return [{ ...item, items: visibleSubs }];
+    }
+    return canView(item) ? [item] : [];
+  });
+
+  if (visibleItems.length === 0) return null;
 
   return (
     <SidebarGroup className="scrollbar-none">
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const hasChildren = item.items && item.items.length > 0;
           const isItemActive =
             isRouteActive(pathname, item.url) ||
@@ -75,7 +97,9 @@ export function NavGroup({ label, items }: NavGroupProps) {
                           >
                             <Link href={subItem.url}>
                               {subItem.icon}
-                              <span className="font-semibold">{subItem.title}</span>
+                              <span className="font-semibold">
+                                {subItem.title}
+                              </span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

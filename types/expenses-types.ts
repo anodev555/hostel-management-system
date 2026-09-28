@@ -24,6 +24,7 @@ export type ExpenseWithItems = {
   totalAmount: string
   paymentMethod: string
   billNumber: string | null
+  billPhoto: string | null
   paidTo: string | null
   paidBy: string
   remarks: string | null

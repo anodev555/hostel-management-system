@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import ExpenseForm from "./expense-form"
-import ExpenseFilter from "./expense-filter"
+import { Button } from "@/components/ui/button";
+import ExpenseForm from "./expense-form";
+import ExpenseFilter from "./expense-filter";
 
-import { cn } from "@/lib/utils"
-import { ExpenseDashboardStats } from "./expensedashboard-card"
-import { ExpenseDashboardData } from "@/types/expenses-types"
-import { GetAllExpenseResponse } from "@/types/expenses-types"
+import { cn } from "@/lib/utils";
+import { ExpenseDashboardStats } from "./expensedashboard-card";
+import { ExpenseDashboardData } from "@/types/expenses-types";
+import { GetAllExpenseResponse } from "@/types/expenses-types";
 import {
   Table,
   TableBody,
@@ -16,18 +16,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { PaginationControls } from "@/components/pagination-controls"
-import { formatPaymentMethod } from "../../lib/utils"
+} from "@/components/ui/table";
+import { PaginationControls } from "@/components/pagination-controls";
+import { formatPaymentMethod } from "../../lib/utils";
+import ExpenseEditForm from "./expenseedit-form";
 
 export default function ExpenseManagement({
   dashboardData,
   expenseData,
 }: {
-  dashboardData: ExpenseDashboardData
-  expenseData: GetAllExpenseResponse
+  dashboardData: ExpenseDashboardData;
+  expenseData: GetAllExpenseResponse;
 }) {
-  const { expenses, totalPages } = expenseData
+  const { expenses, totalPages } = expenseData;
 
   return (
     <div className="w-full flex-col space-y-4">
@@ -48,7 +49,6 @@ export default function ExpenseManagement({
 
       <ExpenseFilter />
       <div className="w-full space-y-4">
-        {" "}
         <Table>
           <TableHeader>
             <TableRow>
@@ -75,7 +75,7 @@ export default function ExpenseManagement({
                   </TableCell>
                   <TableCell>{expense.paidBy}</TableCell>
                   <TableCell>
-                    <button className="btn btn-sm btn-primary">Edit</button>
+                    <ExpenseEditForm expense={expense} />
                   </TableCell>
                 </TableRow>
               ))
@@ -95,5 +95,5 @@ export default function ExpenseManagement({
         <PaginationControls totalPages={totalPages} />
       </div>
     </div>
-  )
+  );
 }

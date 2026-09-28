@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
 import {
   DropdownMenu,
@@ -8,70 +8,70 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { ArrowRightLeft, ChevronsUpDownIcon } from "lucide-react"
-import { authClient } from "@/lib/authClient"
-import type { Org } from "@/types/org-type"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
+} from "@/components/ui/sidebar";
+import { ArrowRightLeft, ChevronsUpDownIcon } from "lucide-react";
+import { authClient } from "@/lib/authClient";
+import type { Org } from "@/types/org-type";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export function TeamSwitcher({
   currentActiveOrganization,
   organizations,
 }: {
-  currentActiveOrganization: Org | null
-  organizations: Org[]
+  currentActiveOrganization: Org | null;
+  organizations: Org[];
 }) {
-  const { isMobile } = useSidebar()
-  const router = useRouter()
-  const TOAST_ID = "switching-org"
-  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
+  const { isMobile } = useSidebar();
+  const router = useRouter();
+  const TOAST_ID = "switching-org";
+  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false);
 
   const handleSwitchOrganization = async (
     organizationId: string,
-    organizationSlug: string
+    organizationSlug: string,
   ) => {
     if (organizationId === currentActiveOrganization?.id) {
-      return
+      return;
     }
     try {
-      setIsSwitchingOrg(true)
+      setIsSwitchingOrg(true);
       toast.loading("Switching organization...", {
         id: TOAST_ID,
-      })
+      });
       const { data, error } = await authClient.organization.setActive({
         organizationId,
         organizationSlug,
-      })
+      });
 
       if (error) {
         toast.error(error.message, {
           id: TOAST_ID,
-        })
-        return
+        });
+        return;
       }
       toast.success(`Switched to ${data.name}`, {
         id: TOAST_ID,
-      })
-      router.refresh()
+      });
+      router.refresh();
     } catch (error) {
-      console.error(error)
+      console.error(error);
       toast.error("Failed to switch organization", {
         id: TOAST_ID,
-      })
-      return
+      });
+      return;
     } finally {
-      setIsSwitchingOrg(false)
+      setIsSwitchingOrg(false);
     }
-  }
+  };
 
   return (
     <SidebarMenu>
@@ -114,13 +114,13 @@ export function TeamSwitcher({
                 <ArrowRightLeft size="20" />
               </DropdownMenuLabel>
               {organizations.map((org, index) => {
-                const isActive = org.id === currentActiveOrganization?.id
+                const isActive = org.id === currentActiveOrganization?.id;
                 return (
                   <DropdownMenuItem
                     key={org.id}
                     disabled={isSwitchingOrg}
                     onClick={() => {
-                      handleSwitchOrganization(org.id, org.slug)
+                      handleSwitchOrganization(org.id, org.slug);
                     }}
                     className={cn("w-full gap-2 p-2", isActive && "")}
                   >
@@ -132,7 +132,7 @@ export function TeamSwitcher({
                     )}
                     {org.name}
                   </DropdownMenuItem>
-                )
+                );
               })}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -142,8 +142,14 @@ export function TeamSwitcher({
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             {currentActiveOrganization?.logo && (
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                {currentActiveOrganization?.logo}
+              <div className="">
+                {currentActiveOrganization?.logo && (
+                  <img
+                    src={`/${currentActiveOrganization.logo}`}
+                    alt={currentActiveOrganization.name}
+                    className="aspect-square size-10 rounded-lg object-cover"
+                  />
+                )}
               </div>
             )}
 
@@ -163,5 +169,5 @@ export function TeamSwitcher({
         )}
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

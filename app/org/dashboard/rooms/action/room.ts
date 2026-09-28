@@ -1,11 +1,11 @@
-"use server"
+"use server";
 
-import db from "@/db"
-import { lodgingPlan, room, student, studentRoomAssignment } from "@/db/schema"
-import { withAuth } from "@/lib/withAuth"
-import { ActionResponse } from "@/types/action-response"
-import { RoomInfoWithStudents } from "@/types/room-type"
-import { eq, and, desc, isNull } from "drizzle-orm"
+import db from "@/db";
+import { lodgingPlan, room, student, studentRoomAssignment } from "@/db/schema";
+import { withAuth } from "@/lib/withAuth";
+import { ActionResponse } from "@/types/action-response";
+import { RoomInfoWithStudents } from "@/types/room-type";
+import { eq, and, desc, isNull } from "drizzle-orm";
 
 export const getAllRoomsInfo = withAuth<
   void,
@@ -13,7 +13,7 @@ export const getAllRoomsInfo = withAuth<
 >({
   roles: ["orgUser"],
   permissions: {
-    room: ["read"],
+    student: ["read"],
   },
   requireActiveOrg: true,
 })(async ({
@@ -25,7 +25,7 @@ export const getAllRoomsInfo = withAuth<
       return {
         success: false,
         message: "Organization not found",
-      }
+      };
     }
 
     const [rooms, assignments] = await Promise.all([
@@ -46,8 +46,8 @@ export const getAllRoomsInfo = withAuth<
         .where(
           and(
             eq(room.organizationId, organizationId),
-            eq(room.status, "active")
-          )
+            eq(room.status, "active"),
+          ),
         )
         .orderBy(desc(room.roomNumber)),
 
@@ -65,20 +65,20 @@ export const getAllRoomsInfo = withAuth<
           and(
             eq(studentRoomAssignment.organizationId, organizationId),
             eq(studentRoomAssignment.status, "assigned"),
-            isNull(studentRoomAssignment.endDate)
-          )
+            isNull(studentRoomAssignment.endDate),
+          ),
         ),
-    ])
+    ]);
     //group the students by room
     const studentsByRoom: Record<
       string,
       {
-        bedNumber: number
-        studentId: string
-        studentName: string
-        studentProfile: string
+        bedNumber: number;
+        studentId: string;
+        studentName: string;
+        studentProfile: string;
       }[]
-    > = {}
+    > = {};
 
     // { we grouped the students by room like this:
     //     "room-A": [
@@ -89,34 +89,34 @@ export const getAllRoomsInfo = withAuth<
     //   }
     for (const assignment of assignments) {
       if (!studentsByRoom[assignment.roomId]) {
-        studentsByRoom[assignment.roomId] = []
+        studentsByRoom[assignment.roomId] = [];
       }
       studentsByRoom[assignment.roomId].push({
         bedNumber: assignment.bedNumber,
         studentId: assignment.studentId,
         studentName: assignment.studentName,
         studentProfile: assignment.studentProfile || "",
-      })
+      });
     }
 
     const result: RoomInfoWithStudents[] = rooms.map((room) => {
-      const students = studentsByRoom[room.roomId] ?? []
+      const students = studentsByRoom[room.roomId] ?? [];
       return {
         room: { ...room },
         students,
         vacantBeds: room.totalBeds - students.length,
         occupiedBeds: students.length,
-      }
-    })
+      };
+    });
 
     return {
       success: true,
       data: result,
-    }
+    };
   } catch (error) {
     return {
       success: false,
       message: "Something went wrong",
-    }
+    };
   }
-})
+});

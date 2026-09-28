@@ -44,49 +44,31 @@ export const data = {
       url: "/org/dashboard/new-admission",
       icon: <PlusIcon />,
       isActive: true,
+      resource: "student",
+      action: "create",
     },
   ],
 
-  // Rooms: [
-  //   {
-  //     title: "Rooms",
-  //     url: "/org/dashboard/rooms",
-  //     icon: <DoorOpen />,
-  //     isActive: true,
-  //   },
-  // ],
-
-  // roles: [
-  //   {
-  //     title: "Roles",
-  //     url: "/org/dashboard/roles",
-  //     icon: <UserKey />,
-  //     isActive: true,
-  //   },
-  // ],
-  // staff: [
-  //   {
-  //     title: "Staff",
-  //     url: "/org/dashboard/staff",
-  //     icon: <UserKey />,
-  //     isActive: true,
-  //   },
-  // ],
   Staff: [
     {
-      title: "Staff",
+      title: "Staff & Roles",
       url: "#",
       icon: <UserKey />,
+      isActive: true,
       items: [
         {
           title: "Staff",
           url: "/org/dashboard/staff",
           icon: <UserKey />,
+          resource: "staff",
+          action: "read",
         },
         {
           title: "Roles",
           url: "/org/dashboard/roles",
           icon: <UserKey />,
+          resource: "ac",
+          action: "read",
         },
       ],
     },
@@ -102,16 +84,22 @@ export const data = {
           title: "Student",
           url: "/org/dashboard/students",
           icon: <User />,
+          resource: "student",
+          action: "read",
         },
         {
           title: "Room",
           url: "/org/dashboard/rooms",
           icon: <DoorOpen />,
+          resource: "student",
+          action: "read",
         },
         {
           title: "Tuition",
           url: "/org/dashboard/tuition",
           icon: <GraduationCap />,
+          resource: "student",
+          action: "read",
         },
       ],
     },
@@ -128,11 +116,15 @@ export const data = {
           title: "Student Billing",
           url: "/org/dashboard/billing",
           icon: <UserCheck />,
+          resource: "staff",
+          action: "read",
         },
         {
           title: "Payroll",
           url: "/org/dashboard/payroll",
           icon: <BanknoteArrowUp />,
+          resource: "payroll",
+          action: "read",
         },
       ],
     },
@@ -151,6 +143,8 @@ export const data = {
       url: "/org/dashboard/expenses",
       icon: <BanknoteArrowDown />,
       isActive: true,
+      resource: "expenses",
+      action: "read",
     },
   ],
   Payroll: [
@@ -166,26 +160,22 @@ export const data = {
 export const orgNavGroups: OrgNavGroup[] = [
   {
     label: "New Admission",
-    resource: "student",
-    action: "create",
+
     items: data.NewAdmission,
   },
   {
     label: "Students",
-    resource: "student",
-    action: "read",
+
     items: data.Students,
   },
   {
     label: "Billing",
-    resource: "billing",
-    action: "read",
+
     items: data.Billings,
   },
   {
-    label: "Staff",
-    resource: "staff",
-    action: "read",
+    label: "Access Control",
+
     items: data.Staff,
   },
   // {
@@ -202,8 +192,7 @@ export const orgNavGroups: OrgNavGroup[] = [
   // },
   {
     label: "Expenses",
-    resource: "expenses",
-    action: "read",
+
     items: data.Expenses,
   },
   // {

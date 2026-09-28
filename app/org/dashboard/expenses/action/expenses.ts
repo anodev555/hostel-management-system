@@ -6,6 +6,8 @@ import { organization } from "better-auth/plugins"
 import {
   createExpenseSchema,
   CreateExpenseSchemaType,
+  editExpenseSchema,
+  EditExpenseSchemaType,
 } from "../schema/expenseSchema"
 import db from "@/db"
 import { format } from "date-fns"
@@ -156,6 +158,168 @@ export const createExpensesAction = withAuth<
 //   from: Date
 //   to: Date
 // }
+
+export const updateExpensesAction = withAuth<
+  EditExpenseSchemaType,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    expenses: ["update"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId, session }) => {
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "Organization not found",
+      }
+    }
+
+    const parsed = editExpenseSchema.safeParse(data)
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error)
+      return {
+        success: false,
+        message: "Invalid data",
+        fieldErrors: fieldErrors,
+      }
+    }
+
+    const { id, items, existingBillPhoto, ...rest } = parsed.data
+
+    const [existing] = await db
+      .select({ id: expenses.id, billPhoto: expenses.billPhoto })
+      .from(expenses)
+      .where(
+        and(
+          eq(expenses.id, id),
+          eq(expenses.organizationId, organizationId)
+        )
+      )
+      .limit(1)
+
+    if (!existing) {
+      return {
+        success: false,
+        message: "Expense not found",
+      }
+    }
+
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      amount: (
+        Math.round(Number(item.quantity) * Number(item.unitPrice) * 100) / 100
+      ).toFixed(2),
+    }))
+
+    const totalAmount = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.amount),
+      0
+    )
+
+    if (totalAmount <= 0) {
+      throw new Error("Total amount must be greater than 0")
+    }
+    const expense_date = format(rest.expenseDate, "yyyy-MM-dd")
+
+    const expense_year = rest.expenseDate.getFullYear()
+    const expense_month = rest.expenseDate.getMonth() + 1
+    const expense_dayofMonth = rest.expenseDate.getDate()
+
+    let billPhotoPath: string | null = existing.billPhoto ?? null
+    if (rest.billPhoto) {
+      const { relativePath } = await uploadImage(
+        rest.billPhoto,
+        "public/uploads/expensesbill",
+        {
+          maxSizeBytes: 5 * 1024 * 1024, // 5MB
+          allowedMimeTypes: ["image/jpeg", "image/png", "image/jpg"],
+        }
+      )
+      if (existing.billPhoto) {
+        await deleteFile(existing.billPhoto).catch((error) => {
+          console.error(error)
+        })
+      }
+      billPhotoPath = relativePath
+    } else if (existingBillPhoto == null && existing.billPhoto) {
+      await deleteFile(existing.billPhoto).catch((error) => {
+        console.error(error)
+      })
+      billPhotoPath = null
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(expenses)
+        .set({
+          expenseDate: expense_date,
+          expenseYear: expense_year,
+          expenseMonth: expense_month,
+          expenseDayOfMonth: expense_dayofMonth,
+          category: rest.category,
+          billNumber: rest.billNumber ?? null,
+          billPhoto: billPhotoPath,
+          totalAmount: totalAmount.toString(),
+          paymentMethod: rest.paymentMethod,
+          paidTo: rest.paidTo ?? null,
+          paidBy: rest.paidBy,
+          remarks: rest.remarks ?? null,
+        })
+        .where(
+          and(
+            eq(expenses.id, id),
+            eq(expenses.organizationId, organizationId)
+          )
+        )
+
+      await tx
+        .delete(expenseItems)
+        .where(
+          and(
+            eq(expenseItems.expenseId, id),
+            eq(expenseItems.organizationId, organizationId)
+          )
+        )
+
+      await tx.insert(expenseItems).values(
+        normalizedItems.map((item) => ({
+          organizationId: organizationId,
+          expenseId: id,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          amount: item.amount ?? "0.00",
+        }))
+      )
+    })
+
+    revalidatePath("/org/dashboard/expenses")
+
+    return {
+      success: true,
+      message: "Expense updated successfully",
+      data: null,
+    }
+  } catch (error) {
+    console.error(error)
+    if (error instanceof UploadValidationError) {
+      return {
+        success: false,
+        message: error.message,
+        fieldErrors: {
+          billPhoto: [error.message],
+        },
+      }
+    }
+    return {
+      success: false,
+      message: `${error instanceof Error ? error.message : "Something went wrong"}`,
+    }
+  }
+})
 
 export const getExpenseDashboardAction = withAuth<
   void,
@@ -339,6 +503,7 @@ export const getAllExpenseData = withAuth<
       totalAmount: expenses.totalAmount,
       paymentMethod: expenses.paymentMethod,
       billNumber: expenses.billNumber,
+      billPhoto: expenses.billPhoto,
       paidTo: expenses.paidTo,
       paidBy: expenses.paidBy,
       remarks: expenses.remarks,
@@ -365,6 +530,7 @@ export const getAllExpenseData = withAuth<
           totalAmount: row.totalAmount,
           paymentMethod: row.paymentMethod,
           billNumber: row.billNumber,
+          billPhoto: row.billPhoto,
           paidTo: row.paidTo,
           paidBy: row.paidBy,
           remarks: row.remarks,
