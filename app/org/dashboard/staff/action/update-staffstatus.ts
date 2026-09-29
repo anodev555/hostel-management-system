@@ -1,17 +1,16 @@
-'use server'
+"use server";
 import db from "@/db";
 import { member, user } from "@/db/schema";
 import { withAuth } from "@/lib/withAuth";
 import { ActionResponse } from "@/types/action-response";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
- export type updateStaffStatusProps = {
-  status:boolean;
-  staffId:string;
-}
+export type updateStaffStatusProps = {
+  status: boolean;
+  staffId: string;
+};
 
-
- export const updateStaffStatusAction = withAuth<
+export const updateStaffStatusAction = withAuth<
   updateStaffStatusProps,
   ActionResponse<null>
 >({
@@ -39,9 +38,9 @@ import { revalidatePath } from "next/cache";
       .where(
         and(eq(member.id, memberId), eq(member.organizationId, organizationId)),
       )
-      .limit(1); 
-      
-      if (!memberRow[0]) {
+      .limit(1);
+
+    if (!memberRow[0]) {
       return {
         success: false,
         message: "Staff not found!",
@@ -55,19 +54,12 @@ import { revalidatePath } from "next/cache";
       };
     }
 
-   
-
-  await db.update(user).set({
-    isActive:data.status
-  }).where(
-    and(
-        eq(
-            user.id,
-            memberRow[0].userId
-        ),
-       
-    )
-  )
+    await db
+      .update(user)
+      .set({
+        isActive: data.status,
+      })
+      .where(and(eq(user.id, memberRow[0].userId)));
 
     revalidatePath("org/dashboard/staff");
     return {

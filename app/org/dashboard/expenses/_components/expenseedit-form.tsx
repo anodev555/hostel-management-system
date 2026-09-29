@@ -199,7 +199,7 @@ export default function ExpenseEditForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" size="icon">
+        <Button variant="default" size="icon-sm">
           <PencilIcon />
         </Button>
       </DialogTrigger>

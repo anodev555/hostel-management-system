@@ -20,6 +20,8 @@ import {
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatPaymentMethod } from "../../lib/utils";
 import ExpenseEditForm from "./expenseedit-form";
+import ViewExpenseDialog from "./expense-veiwdialog";
+import DeleteExpenseDialog from "./expense-deletedialog";
 
 export default function ExpenseManagement({
   dashboardData,
@@ -75,7 +77,10 @@ export default function ExpenseManagement({
                   </TableCell>
                   <TableCell>{expense.paidBy}</TableCell>
                   <TableCell>
+                    <ViewExpenseDialog expense={expense} />
                     <ExpenseEditForm expense={expense} />
+
+                    <DeleteExpenseDialog expenseId={expense.id} />
                   </TableCell>
                 </TableRow>
               ))

@@ -416,6 +416,106 @@ const expenseFilterSchema = z.object({
   page: z.string().optional(),
 })
 
+const deleteExpenseSchema = z.object({
+  id: z.uuid("Invalid expense id"),
+})
+
+type DeleteExpenseProps = z.infer<typeof deleteExpenseSchema>
+
+export const deleteExpenseAction = withAuth<
+  DeleteExpenseProps,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    expenses: ["delete"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId }): Promise<ActionResponse<null>> => {
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "Organization not found",
+      }
+    }
+
+    const parsed = deleteExpenseSchema.safeParse(data)
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error)
+      return {
+        success: false,
+        message: "Invalid data",
+        fieldErrors,
+      }
+    }
+
+    const { id } = parsed.data
+
+    // Verify the expense belongs to the current org and capture bill photo first
+    const [existing] = await db
+      .select({ id: expenses.id, billPhoto: expenses.billPhoto })
+      .from(expenses)
+      .where(
+        and(
+          eq(expenses.id, id),
+          eq(expenses.organizationId, organizationId)
+        )
+      )
+      .limit(1)
+
+    if (!existing) {
+      return {
+        success: false,
+        message: "Expense not found",
+      }
+    }
+
+    const billPhotoPath = existing.billPhoto
+
+    // expense_items.expense_id has onDelete: "cascade",
+    // so deleting the parent expense automatically deletes its items.
+    const deleted = await db
+      .delete(expenses)
+      .where(
+        and(
+          eq(expenses.id, id),
+          eq(expenses.organizationId, organizationId)
+        )
+      )
+      .returning({ id: expenses.id })
+
+    if (deleted.length === 0) {
+      return {
+        success: false,
+        message: "Expense not found",
+      }
+    }
+
+    revalidatePath("/org/dashboard/expenses")
+
+    // Delete bill photo only after successful DB delete. Never fail the
+    // action if file cleanup fails — just log it.
+    if (billPhotoPath) {
+      await deleteFile(billPhotoPath).catch((error) => {
+        console.error("Failed to delete expense bill photo:", error)
+      })
+    }
+
+    return {
+      success: true,
+      message: "Expense deleted successfully",
+      data: null,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message: `${error instanceof Error ? error.message : "Something went wrong"}`,
+    }
+  }
+})
+
 type getAllExpenseProps = z.infer<typeof expenseFilterSchema>
 
 const parseOptionalDate = (dateString: string | undefined): string | undefined => {

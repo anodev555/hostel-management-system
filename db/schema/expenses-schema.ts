@@ -9,9 +9,9 @@ import {
   text,
   timestamp,
   uuid,
-} from "drizzle-orm/pg-core"
-import { organization, user } from "./auth-schema"
-import { sql } from "drizzle-orm"
+} from "drizzle-orm/pg-core";
+import { organization, user } from "./auth-schema";
+import { sql } from "drizzle-orm";
 
 export const ExpenseCategory = pgEnum("expense_category", [
   "rent",
@@ -20,7 +20,7 @@ export const ExpenseCategory = pgEnum("expense_category", [
   "fuel",
   "food",
   "other",
-])
+]);
 
 export const ExpensePaymentMethod = pgEnum("expense_payment_method", [
   "cash",
@@ -28,7 +28,7 @@ export const ExpensePaymentMethod = pgEnum("expense_payment_method", [
   "esewa",
   "khalti",
   "other",
-])
+]);
 
 export const expenses = pgTable(
   "expenses",
@@ -71,16 +71,16 @@ export const expenses = pgTable(
       table.organizationId,
       table.category,
       table.expenseMonth,
-      table.expenseYear
+      table.expenseYear,
     ),
     index("idx_expense_org_date").on(table.organizationId, table.expenseDate),
     check(
       "expense_month_valid",
-      sql`${table.expenseMonth} >= 1 AND ${table.expenseMonth} <= 12`
+      sql`${table.expenseMonth} >= 1 AND ${table.expenseMonth} <= 12`,
     ),
     check("totalamount_positive", sql`${table.totalAmount} > 0.00`),
-  ]
-)
+  ],
+);
 
 export const expenseItems = pgTable(
   "expense_items",
@@ -115,11 +115,11 @@ export const expenseItems = pgTable(
     check("amount_positive", sql`${table.amount} > 0`),
     check(
       "line_amount_matches",
-      sql`${table.amount} = ${table.quantity} * ${table.unitPrice}`
+      sql`${table.amount} = ${table.quantity} * ${table.unitPrice}`,
     ),
-  ]
-)
+  ],
+);
 
 export type ExpensePaymentMethod =
-  (typeof ExpensePaymentMethod.enumValues)[number]
-export type ExpenseCategory = (typeof ExpenseCategory.enumValues)[number]
+  (typeof ExpensePaymentMethod.enumValues)[number];
+export type ExpenseCategory = (typeof ExpenseCategory.enumValues)[number];
