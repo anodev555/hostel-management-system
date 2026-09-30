@@ -14,6 +14,7 @@ import {
 } from "recharts"
 
 import { money } from "@/app/org/dashboard/lib/utils"
+import type { ProfitLossData } from "@/types/profit-loss-types"
 import type {
   ExpenseAnalysisData,
   PayrollSummaryData,
@@ -22,6 +23,7 @@ import type {
 
 import {
   AXIS_STYLE,
+  CASH_FLOW_COLORS,
   CATEGORY_COLORS,
   CHART_COLORS,
   EXPENSE_CATEGORY_COLORS,
@@ -33,6 +35,10 @@ function formatAxisMoney(value: number) {
     return `${Math.round(value / 1000)}k`
   }
   return String(value)
+}
+
+function rupees(value: number) {
+  return `Rs. ${money(value)}`
 }
 
 const TOOLTIP_STYLE = {
@@ -58,7 +64,7 @@ export function RevenueMonthlyChart({ data }: { data: RevenueByCategoryData }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => `Rs. ${money(Number(value))}`}
+          formatter={(value) => rupees(Number(value))}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
         {data.categoryTotals.map((item) => (
@@ -92,7 +98,7 @@ export function RevenueTrendChart({ data }: { data: RevenueByCategoryData }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => `Rs. ${money(Number(value))}`}
+          formatter={(value) => rupees(Number(value))}
         />
         <Line
           type="monotone"
@@ -124,7 +130,7 @@ export function ExpenseMonthlyChart({ data }: { data: ExpenseAnalysisData }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => `Rs. ${money(Number(value))}`}
+          formatter={(value) => rupees(Number(value))}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
         {data.categoryTotals.map((item) => (
@@ -157,7 +163,7 @@ export function PayrollMonthlyChart({ data }: { data: PayrollSummaryData }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => `Rs. ${money(Number(value))}`}
+          formatter={(value) => rupees(Number(value))}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="invoiced" name="Invoiced" fill={CHART_COLORS.invoiced} radius={[4, 4, 0, 0]} />
@@ -190,7 +196,7 @@ export function PayrollSplitChart({ data }: { data: PayrollSummaryData }) {
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => `Rs. ${money(Number(value))}`}
+          formatter={(value) => rupees(Number(value))}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="staff" name="Staff" stackId="payee" fill={PAYEE_COLORS.staff} />
@@ -203,5 +209,71 @@ export function PayrollSplitChart({ data }: { data: PayrollSummaryData }) {
         />
       </BarChart>
     </ResponsiveContainer>
+  )
+}
+
+/** Cash in against cash out, month by month. */
+export function ProfitLossChart({ data }: { data: ProfitLossData }) {
+  const hasAnyCash = data.monthly.some(
+    (point) =>
+      point.collected > 0 || point.payrollPaid > 0 || point.operationsSpent > 0
+  )
+
+  if (!hasAnyCash) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+        No money moved in this range
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart
+          data={data.monthly}
+          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
+          <XAxis dataKey="label" tick={AXIS_STYLE} tickLine={false} axisLine={false} />
+          <YAxis
+            tick={AXIS_STYLE}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={formatAxisMoney}
+            width={56}
+          />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            formatter={(value) => rupees(Number(value))}
+          />
+          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+          <Bar
+            dataKey="collected"
+            name="Collected from students"
+            fill={CASH_FLOW_COLORS.collected}
+            radius={[4, 4, 0, 0]}
+          />
+          <Bar
+            dataKey="payrollPaid"
+            name="Paid to staff & teachers"
+            fill={CASH_FLOW_COLORS.payrollPaid}
+            radius={[4, 4, 0, 0]}
+          />
+          <Bar
+            dataKey="operationsSpent"
+            name="Operational spend"
+            fill={CASH_FLOW_COLORS.operationsSpent}
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+
+      <p className="text-xs text-muted-foreground">
+        Each bar is the month the cash actually moved, not the month it was
+        billed. A month can show collections for an earlier bill, which is why
+        a single month rarely looks balanced.
+      </p>
+    </div>
   )
 }

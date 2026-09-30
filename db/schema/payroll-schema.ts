@@ -335,6 +335,16 @@ export const payrollPayment = pgTable(
     method: paymentMethod("method").notNull(),
     reference: text("reference"),
     paidAt: timestamp("paid_at").notNull().defaultNow(),
+    /**
+     * Calendar day derived from `paidAt` as `YYYY-MM-DD`. STORED generated
+     * column, so it cannot drift from the timestamp and no write path has to
+     * set it. Kept as a bare `date` so month-range reporting can filter on it
+     * sargably instead of wrapping `paid_at` in `make_date`/`extract`, which
+     * would put the column in the plan's `Filter` and make it unindexable.
+     */
+    paidDate: date("paid_date").generatedAlwaysAs(
+      () => sql`"paid_at"::date`
+    ),
     notes: text("notes"),
 
     receivedBy: text("received_by"),
@@ -356,6 +366,11 @@ export const payrollPayment = pgTable(
   },
   (table) => [
     index("idx_payroll_payment_invoice").on(table.payrollInvoiceId),
+    // Org equality + date range: the shape the cash reports filter on.
+    index("idx_payroll_payment_org_paid_date").on(
+      table.organizationId,
+      table.paidDate
+    ),
     index("idx_payroll_payment_org_payee").on(
       table.organizationId,
       table.payeeType,

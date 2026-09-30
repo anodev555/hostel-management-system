@@ -63,8 +63,8 @@ function shareOf(value: number, total: number) {
 /**
  * Cash and outstanding view.
  *
- * Money in is measured on `payment.paidAt` and money out on
- * `payrollPayment.paidAt` / `expenses.expense_date`, i.e. when the cash
+ * Money in is measured on `payment.paidDate` and money out on
+ * `payrollPayment.paidDate` / `expenses.expense_date`, i.e. when the cash
  * actually moved. Outstanding is the live `dueAmount` on invoices *raised*
  * inside the range. Those are different timelines, so `cash` and `outstanding`
  * are never added together into one figure; the two headline nets are each
@@ -87,17 +87,17 @@ export async function computeProfitLoss(
       // Money in, by the month the cash arrived.
       db
         .select({
-          month: cashMonthKey(payment.paidAt),
+          month: cashMonthKey(payment.paidDate),
           total: sql<string>`coalesce(sum(${payment.amount}), 0)`,
         })
         .from(payment)
         .where(
           and(
             eq(payment.organizationId, organizationId),
-            cashDateRangeFilter(payment.paidAt, fromDate, endExclusive)
+            cashDateRangeFilter(payment.paidDate, fromDate, endExclusive)
           )
         )
-        .groupBy(cashMonthKey(payment.paidAt)),
+        .groupBy(cashMonthKey(payment.paidDate)),
 
       db
         .select({
@@ -107,7 +107,7 @@ export async function computeProfitLoss(
         .where(
           and(
             eq(payment.organizationId, organizationId),
-            cashDateRangeFilter(payment.paidAt, fromDate, endExclusive)
+            cashDateRangeFilter(payment.paidDate, fromDate, endExclusive)
           )
         ),
 
@@ -130,17 +130,17 @@ export async function computeProfitLoss(
       // Money out to staff and teachers, by the month the cash left.
       db
         .select({
-          month: cashMonthKey(payrollPayment.paidAt),
+          month: cashMonthKey(payrollPayment.paidDate),
           total: sql<string>`coalesce(sum(${payrollPayment.amount}), 0)`,
         })
         .from(payrollPayment)
         .where(
           and(
             eq(payrollPayment.organizationId, organizationId),
-            cashDateRangeFilter(payrollPayment.paidAt, fromDate, endExclusive)
+            cashDateRangeFilter(payrollPayment.paidDate, fromDate, endExclusive)
           )
         )
-        .groupBy(cashMonthKey(payrollPayment.paidAt)),
+        .groupBy(cashMonthKey(payrollPayment.paidDate)),
 
       // What payroll was invoiced, and what is still owed, for the range.
       db

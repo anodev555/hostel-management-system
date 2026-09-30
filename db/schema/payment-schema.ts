@@ -1,6 +1,7 @@
 import {
   boolean,
   check,
+  date,
   decimal,
   index,
   pgEnum,
@@ -50,6 +51,23 @@ export const payment = pgTable(
     method: paymentMethod("method").notNull(),
     reference: text("reference"), // reference number from the payment method
     paidAt: timestamp("paid_at").notNull().defaultNow(),
+    /**
+     * Calendar day derived from `paidAt` as `YYYY-MM-DD`.
+     *
+     * A STORED generated column rather than an app-maintained one, so it can
+     * never drift from the timestamp it is derived from and no write path has
+     * to remember to set it.
+     *
+     * This exists because month-range reporting needs a bare, indexable column.
+     * Filtering on `paid_at` through a function — for example
+     * `make_date(extract(year from paid_at)::int, ...)` — is correct but
+     * non-sargable: the column only ever appears inside the expression, so it
+     * lands in the plan's `Filter` and no index on it can be used. Comparing
+     * this `date` column directly keeps the predicate sargable.
+     */
+    paidDate: date("paid_date").generatedAlwaysAs(
+      () => sql`"paid_at"::date`
+    ),
     notes: text("notes"),
     receivedBy: text("received_by"),
     collectedBy: text("collected_by").references(() => user.id, {
@@ -66,6 +84,8 @@ export const payment = pgTable(
   (table) => [
     index("idx_payment_invoice").on(table.invoiceId),
     index("idx_payment_org_student").on(table.organizationId, table.studentId),
+    // Org equality + date range: the shape the cash reports filter on.
+    index("idx_payment_org_paid_date").on(table.organizationId, table.paidDate),
     check("payment_amount_positive", sql`${table.amount} > 0`),
     index("idx_org_late_payment").on(table.organizationId, table.isLate),
   ]

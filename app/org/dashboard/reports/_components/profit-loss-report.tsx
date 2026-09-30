@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 import type { FlowSide, ProfitLossData } from "@/types/profit-loss-types"
 
-import ProfitLossChart from "./profit-loss-chart"
+import { ProfitLossChart } from "./report-charts"
 import { EXPENSE_CATEGORY_COLORS } from "./report-chart-config"
 import { ReportCard } from "./report-primitives"
 
@@ -207,7 +207,7 @@ export default function ProfitLossReport({ data }: { data: ProfitLossData }) {
     operations.cash === 0
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="w-full flex-col space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card label="Money in" hint="Collected from students" tone="in">
           <Amount value={students.cash} />

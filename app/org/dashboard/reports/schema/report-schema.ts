@@ -105,35 +105,44 @@ export function rangeEndExclusiveDate(range: ReportRangeType) {
 }
 
 /**
- * Date-range filter for cash tables.
+ * Date-range filter for cash tables, against the `paid_date` generated column.
  *
  * `payment.paidAt` and `payrollPayment.paidAt` are timestamps, not the
  * denormalised year/month pair every other reportable table uses, so
- * `monthRangeFilter` cannot apply.
+ * `monthRangeFilter` cannot apply. Both tables now carry a STORED generated
+ * `paid_date` column (`date GENERATED ALWAYS AS ("paid_at"::date) STORED`),
+ * indexed as `(organization_id, paid_date)`.
  *
- * The column is compared **bare**, never wrapped in a function. An earlier
- * version used
+ * Filtering that `date` column directly is **sargable**: the column appears
+ * bare in the predicate, so Postgres can use it as an index condition. Wrapping
+ * `paid_at` in a function instead — for example
  * `make_date(extract(year from paid_at)::int, extract(month from paid_at)::int, 1)`
- * which is correct but *non-sargable*: `paid_at` only appears inside the
- * expression, so it lands in the plan's `Filter` and no index on `paid_at` can
- * ever be used, no matter what indexes exist. A direct `>= / <` range keeps the
- * column visible so a `(organization_id, paid_at)` index would be used if one
- * is ever added, and skips two per-row function calls besides.
- *
- * `to_char(paid_at, 'YYYY-MM')` is still fine for *grouping* (see
- * `cashMonthKey`) because grouping does not need index support.
+ * — is also correct but non-sargable, because the column then only ever appears
+ * inside the expression, lands in the plan's `Filter`, and no index on it can
+ * ever be used no matter what indexes exist.
  */
 export function cashDateRangeFilter(
-  paidAtColumn: AnyColumn,
+  paidDateColumn: AnyColumn,
   startDate: string,
   endExclusiveDate: string
 ) {
-  return sql`${paidAtColumn} >= ${startDate}::timestamp and ${paidAtColumn} < ${endExclusiveDate}::timestamp`
+  return sql`${paidDateColumn} >= ${startDate}::date and ${paidDateColumn} < ${endExclusiveDate}::date`
 }
 
-/** `YYYY-MM` bucket for a timestamp column, safe to group by. */
-export function cashMonthKey(paidAtColumn: AnyColumn) {
-  return sql<string>`to_char(${paidAtColumn}, 'YYYY-MM')`
+/**
+ * `YYYY-MM` bucket for a cash date column, safe to group by.
+ *
+ * The explicit `::timestamp` cast (without time zone) is deliberate. Left
+ * implicit, Postgres resolves `to_char(date, text)` through the **timestamptz**
+ * overload, which drags the session `TimeZone` into the expression. It happens
+ * to round-trip correctly because both the cast and the format use the same
+ * zone, but casting to plain `timestamp` keeps the expression free of any
+ * time-zone dependence by construction.
+ *
+ * The output format matches `monthKey()`, so the two maps align.
+ */
+export function cashMonthKey(paidDateColumn: AnyColumn) {
+  return sql<string>`to_char(${paidDateColumn}::timestamp, 'YYYY-MM')`
 }
 
 /** A single bucket key used for grouping and zero-filling month series. */

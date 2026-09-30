@@ -267,11 +267,40 @@ roles must be granted it via the Roles UI.**
   excluded, empty months render as zero, a permission-less org user sees no nav
   entry and gets 403, charts render in light + dark mode.
 
+### Screen structure convention (repo-wide, verified across modules)
+Every org screen follows the same skeleton. Reports were refactored onto it:
+- `page.tsx` is **thin**: `mx-auto flex w-full max-w-7xl` wrapper + `Suspense`
+  whose fallback is an **imported** skeleton component. It holds no logic.
+- `_components/<screen>.tsx` — **async server wrapper**. Awaits `searchParams`,
+  calls the `withAuth` action, renders `<ErrorPage>` on a failed response and
+  `<ErrorResolver>` in a catch, then hands data to the management component.
+- `_components/<screen>-management.tsx` — **presentational shell, `"use client"`**
+  (verified: all three existing `-management` files are client). Root element is
+  `w-full flex-col space-y-4`, starting with a `flex items-center justify-between`
+  header block (title + muted subtitle, optional action on the right).
+- `_components/<screen>-skeleton.tsx` — its own file, mirroring the real layout
+  (header, filter, cards, content).
+- `_components/<screen>-filter.tsx` — client filter, URL params via
+  `usePathname`/`router.replace`.
+
+Reports now match: `reports.tsx` (wrapper) + `reports-management.tsx` (client
+shell) + `report-skeleton.tsx`. Two intermediate files were folded away —
+`reports-loader.tsx` became `reports.tsx`, and `profit-loss-chart.tsx` was
+merged into `report-charts.tsx` so all six charts live in one `"use client"`
+module. Body roots changed from `flex flex-col gap-6` to
+`w-full flex-col space-y-4`; inner grid/card gaps stay as-is because they are
+local spacing, not screen rhythm.
+
+Two skeleton styles exist in the repo: hand-rolled `bg-muted animate-pulse`
+divs (visitors, expenses, payroll) and the shadcn `Skeleton` component
+(students, staff, roles, tuition, and more). The shadcn one is the majority and
+is what reports uses.
+
 ### Not built (deliberate)
 - **CSV export** — view-only for this pass; the aggregate actions already return
   plain series arrays, so a CSV action is a small addition.
 - Reports for collection rate, occupancy/beds and dues aging were scoped out in
-  favour of these three.
+  favour of the four built.
 - Follow-ups from earlier sections still open: `generateInvoicesPerOrg` ignores
   inactive tuition plans, and the `generatePayrollInvoicesPerOrg` status filter
   is still unimplemented.
@@ -413,28 +442,62 @@ denormalised `(year, month)` pair every other reportable table uses, so
 
 `invoice`, `payrollInvoice` and `expenses` keep the tuple filter.
 
-### Sargability: why there is no index on `paid_at`
-The first version of this filter was
+### Sargability: the `paid_date` generated column
+The original filter was
 `make_date(extract(year from paid_at)::int, extract(month from paid_at)::int, 1)
 between from and to`. It was **correct but non-sargable** — `paid_at` appeared
 only inside the expression, so it landed in the plan's `Filter`, and **no index
 on `paid_at` could ever be used, no matter what indexes existed.** EXPLAIN
-confirmed both shapes:
-
+showed both shapes:
 ```
 old: Filter: (make_date(EXTRACT(year FROM paid_at)::integer, ...) >= ...)
-new: Filter: (paid_at >= '2026-04-01'::timestamp AND paid_at < '2026-10-01'::timestamp)
+```
+The column only exists inside the expression, so it is index-ineligible.
+
+**Resolution: denormalise the day into a STORED generated column.**
+- `payment.paid_date` and `payroll_payment.paid_date`:
+  `date GENERATED ALWAYS AS ("paid_at"::date) STORED`.
+  `STORED` (not `VIRTUAL`) is deliberate — `VIRTUAL` is recomputed per read and
+  **cannot be indexed**. `GENERATED ALWAYS` means the app never sets it, so it
+  cannot drift from the timestamp and no write path has to remember it.
+  Existing rows were backfilled by Postgres automatically (verified 10/10 and
+  2/2 rows match `paid_at::date`).
+- Indexes `idx_payment_org_paid_date` and `idx_payroll_payment_org_paid_date`
+  on `(organization_id, paid_date)` — org equality plus a date range, the shape
+  the reports filter on.
+- Migration `drizzle/0026_reflective_luckman.sql`, applied with `db:push`
+  (per this repo's convention: `drizzle.__drizzle_migrations` stays empty, so
+  `db:migrate` is a no-op here).
+
+Proven with `SET enable_seqscan=off` (the planner prefers a seq scan on a
+10-row table regardless), which now yields:
+```
+Index Scan using idx_payment_org_paid_date on payment
+  Index Cond: ((organization_id = 'x') AND (paid_date >= '2026-04-01') AND (paid_date < '2026-10-01'))
 ```
 
-Rewritten to a bare `>= / <` range, so a `(organization_id, paid_at)` index
-*would* be used if one is ever added, and two per-row function calls disappear.
-Both forms return 29,415 (student) and 30,000 (payroll) — verified identical.
+**Drizzle gotcha:** a generated column cannot reference a sibling column via
+`table` — `table` only exists in the extras callback, not the column
+definition. Use the lazy form with the literal column name:
+`date("paid_date").generatedAlwaysAs(() => sql\`"paid_at"::date\`)`.
 
-**The `(organization_id, paid_at)` index was deliberately NOT added.** At 10
-rows / 80 kB (payment) and 2 rows / 64 kB (payroll_payment) a btree index is
-pure write overhead with no read benefit — the planner will never choose it.
-It is now a one-line schema addition that would actually work, so defer it until
-the tables get large.
+### A time-zone trap in the month key
+`to_char(paid_date, 'YYYY-MM')` on a **`date`** column silently resolves through
+the **timestamptz** overload, dragging the session `TimeZone` into the
+expression. It happens to round-trip correctly (the cast and the format both use
+the same zone) — verified correct under `Pacific/Kiritimati` (+14) and
+`America/New_York` (−4) — but it is a latent dependency. `cashMonthKey` now
+casts explicitly:
+`to_char(paid_date::timestamp, 'YYYY-MM')`, so no `timestamptz` appears in the
+plan. Output format still matches `monthKey()`.
+
+### Cash column range filter
+`rangeStartDate` / `rangeEndExclusiveDate`. The upper bound is **exclusive at
+the start of the following month**, not "last day of `toMonth`", because the
+source is a timestamp and an inclusive `<= lastDay` on a date would drop
+anything recorded after midnight on the final day. Verified: 03-31 23:59:59.999999
+excluded, 04-01 00:00:00 included, 09-30 23:59:59.999999 included, 10-01 00:00:00
+excluded.
 
 ### Dead code removed
 `previousRange()` (only the P&L used it), `parseMonthKey()` (never used), the
@@ -463,7 +526,9 @@ clean; `npm run build` compiles (still fails only on the pre-existing
   100% width, late-payment figure, chart in light + dark mode.
 
 ### Outstanding follow-up
-None. The `paid_at` index question is settled — the filter is now sargable, so
-adding `(organization_id, paid_at)` to `payment` and `payroll_payment` is
-optional future-proofing, deferred because both tables are near-empty.
+None for the cash-range problem — solved by the `paid_date` generated column
+plus its `(organization_id, paid_date)` index. Note the other reportable tables
+(`expenses`, `invoice`, `payroll_invoice`, `visitor`, fines) already carry
+denormalised year/month columns, so `payment` / `payroll_payment` were the only
+two cash tables that needed this.
 

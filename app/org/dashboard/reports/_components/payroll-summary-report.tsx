@@ -26,7 +26,7 @@ export default function PayrollSummaryReport({
     data.totalInvoiced > 0 || data.payeeCount > 0 || data.activeRunRate.total > 0
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="w-full flex-col space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryBox
           label="Payroll invoiced"

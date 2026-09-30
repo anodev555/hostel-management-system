@@ -37,4 +37,11 @@ export const CHART_COLORS = {
   total: "#6366f1",
 } as const
 
+/** Cash-in / cash-out series for the profit & loss monthly chart. */
+export const CASH_FLOW_COLORS = {
+  collected: "#10b981",
+  payrollPaid: "#f59e0b",
+  operationsSpent: "#a1a1aa",
+} as const
+
 export const AXIS_STYLE = { fontSize: 12, fill: "#71717a" } as const
