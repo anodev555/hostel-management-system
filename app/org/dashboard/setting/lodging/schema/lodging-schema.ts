@@ -29,12 +29,18 @@ export const createLodgingDefaultValues: CreateLodgingSchemaType = {
 
 export const editLodgingSchema = createLodgingSchema.extend({
   lodgingId: z.uuid("Invalid lodging id"),
+})
+
+export type EditLodgingSchemaType = z.infer<typeof editLodgingSchema>
+
+export const updateLodgingStatusSchema = z.object({
+  lodgingId: z.uuid("Invalid lodging id"),
   status: z.enum(lodgingStatusValues, {
     message: "Invalid lodging plan status",
   }),
 })
 
-export type EditLodgingSchemaType = z.infer<typeof editLodgingSchema>
+export type UpdateLodgingStatusSchemaType = z.infer<typeof updateLodgingStatusSchema>
 
 export const deleteLodgingSchema = z.object({
   lodgingId: z.uuid("Invalid lodging id"),

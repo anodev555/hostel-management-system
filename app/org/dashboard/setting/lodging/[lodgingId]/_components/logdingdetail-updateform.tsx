@@ -25,8 +25,6 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
 import type { LodgingItem } from "@/types/lodging-types"
 
 import { deleteLodgingAction, updateLodgingAction } from "../../action/lodging"
@@ -49,7 +47,6 @@ function lodgingToFormValues(lodging: LodgingItem): EditLodgingSchemaType {
     lodgingId: lodging.id,
     name: lodging.name,
     monthlyPrice: lodging.monthlyPrice,
-    status: lodging.status === "inactive" ? "inactive" : "active",
   }
 }
 
@@ -190,51 +187,6 @@ export default function LodgingDetailUpdateForm({
                       <FieldError>{fieldState.error?.message}</FieldError>
                     </Field>
                   )}
-                />
-
-                <Controller
-                  control={form.control}
-                  name="status"
-                  render={({ field, fieldState }) => {
-                    const isActive = field.value === "active"
-
-                    return (
-                      <Field data-invalid={!!fieldState.error}>
-                        <FieldLabel htmlFor="edit-lodging-status">
-                          Status
-                        </FieldLabel>
-                        <label
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-3 transition-colors",
-                            isActive && "border-primary bg-primary/5",
-                            isLoading && "cursor-not-allowed opacity-50"
-                          )}
-                        >
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-medium">
-                              {isActive ? "Active" : "Inactive"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {isActive
-                                ? "This plan can be assigned to rooms."
-                                : "Inactive plans are hidden from new room assignments."}
-                            </p>
-                          </div>
-                          <Checkbox
-                            id="edit-lodging-status"
-                            disabled={isLoading}
-                            checked={isActive}
-                            onCheckedChange={(checked) =>
-                              field.onChange(
-                                checked === true ? "active" : "inactive"
-                              )
-                            }
-                          />
-                        </label>
-                        <FieldError>{fieldState.error?.message}</FieldError>
-                      </Field>
-                    )
-                  }}
                 />
               </FieldGroup>
             </FieldSet>

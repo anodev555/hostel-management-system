@@ -15,8 +15,10 @@ import { TeacherDetail } from "@/types/teacher-types"
 import {
   deleteTeacherSchema,
   editTeacherSchema,
+  updateTeacherStatusSchema,
   type DeleteTeacherSchemaType,
   type EditTeacherSchemaType,
+  type UpdateTeacherStatusSchemaType,
 } from "../../schema/teacher-schema"
 import { format } from "date-fns"
 
@@ -161,7 +163,6 @@ export const updateTeacherAction = withAuth<
       email,
       subject,
       address,
-      status,
       monthlySalary,
     } = parsed.data
 
@@ -211,7 +212,6 @@ export const updateTeacherAction = withAuth<
           email: email || null,
           subject: subject || null,
           address: address || null,
-          status,
           updatedBy: session.user.id,
         })
         .where(
@@ -259,6 +259,105 @@ export const updateTeacherAction = withAuth<
   } catch (error) {
     console.error(error)
     return { success: false, message: "Failed to update teacher" }
+  }
+})
+
+export const updateTeacherStatusAction = withAuth<
+  UpdateTeacherStatusSchemaType,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    tuition: ["update"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId, session }): Promise<ActionResponse<null>> => {
+  try {
+    if (!organizationId) {
+      return { success: false, message: "No organization id found" }
+    }
+
+    const parsed = updateTeacherStatusSchema.safeParse(data)
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error)
+      return { success: false, message: "Invalid data", fieldErrors }
+    }
+
+    const { teacherId, status } = parsed.data
+
+    const [existingTeacher] = await db
+      .select({ id: tuitionTeacher.id })
+      .from(tuitionTeacher)
+      .where(
+        and(
+          eq(tuitionTeacher.id, teacherId),
+          eq(tuitionTeacher.organizationId, organizationId)
+        )
+      )
+      .limit(1)
+    if (!existingTeacher) {
+      return { success: false, message: "Teacher not found" }
+    }
+
+    const today = new Date()
+    const todayStr = format(today, "yyyy-MM-dd")
+
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(tuitionTeacher)
+        .set({ status, updatedBy: session.user.id })
+        .where(
+          and(
+            eq(tuitionTeacher.id, teacherId),
+            eq(tuitionTeacher.organizationId, organizationId)
+          )
+        )
+        .returning({ id: tuitionTeacher.id })
+      if (!updated) {
+        throw new Error("Teacher not found")
+      }
+
+      if (status !== "inactive") return
+
+      const openContracts = await tx
+        .select({
+          id: payrollContract.id,
+          effectiveFrom: payrollContract.effectiveFrom,
+        })        .from(payrollContract)
+        .where(
+          and(
+            eq(payrollContract.teacherId, teacherId),
+            eq(payrollContract.organizationId, organizationId),
+            eq(payrollContract.status, "active"),
+            isNull(payrollContract.effectiveTo)
+          )
+        )
+
+      for (const contract of openContracts) {
+        const from = contract.effectiveFrom
+
+        await tx
+          .update(payrollContract)
+          .set({
+            status: "inactive",
+            effectiveTo: from && from > todayStr ? from : todayStr,
+            updatedBy: session.user.id,
+          })
+          .where(eq(payrollContract.id, contract.id))
+      }
+    })
+
+    revalidatePath(TEACHER_LIST_PATH)
+    revalidatePath(`${TEACHER_LIST_PATH}/${teacherId}`)
+
+    return {
+      success: true,
+      message: `Teacher marked as ${status} successfully`,
+      data: null,
+    }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: "Failed to update teacher status" }
   }
 })
 

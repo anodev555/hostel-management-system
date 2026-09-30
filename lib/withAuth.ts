@@ -1,7 +1,11 @@
 import { headers } from "next/headers"
 
 import type { RoleType } from "@/db/schema"
+import db from "@/db"
+import { organization, user } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { ORG_INACTIVE_MESSAGE, USER_INACTIVE_MESSAGE } from "./auth-messages"
 
 /** Logged-in session from Better Auth (non-null). */
 export type AuthSession = NonNullable<
@@ -122,6 +126,15 @@ export function withAuth<TInput, TOutput>(options: WithAuthOptions) {
         throw new AuthActionError("Not authenticated", "UNAUTHORIZED")
       }
 
+      // Kick users deactivated after login.
+      const freshUser = await db.query.user.findFirst({
+        where: eq(user.id, session.user.id),
+        columns: { isActive: true },
+      })
+      if (freshUser?.isActive === false) {
+        throw new AuthActionError(USER_INACTIVE_MESSAGE, "FORBIDDEN")
+      }
+
       const role = session.user.role as RoleType
 
       if (options.roles && !options.roles.includes(role)) {
@@ -129,6 +142,18 @@ export function withAuth<TInput, TOutput>(options: WithAuthOptions) {
       }
 
       const organizationId = session.session.activeOrganizationId ?? null
+
+      // Kick members whose active organization was deactivated after login.
+      // superAdmin has no single org, so only check orgUsers with an active org.
+      if (organizationId && role !== "superAdmin") {
+        const activeOrg = await db.query.organization.findFirst({
+          where: eq(organization.id, organizationId),
+          columns: { isActive: true },
+        })
+        if (activeOrg && activeOrg.isActive === false) {
+          throw new AuthActionError(ORG_INACTIVE_MESSAGE, "FORBIDDEN")
+        }
+      }
 
       if (options.requireActiveOrg && !organizationId) {
         throw new AuthActionError(

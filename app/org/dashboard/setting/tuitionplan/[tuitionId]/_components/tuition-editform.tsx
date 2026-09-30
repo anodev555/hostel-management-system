@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -38,7 +37,6 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import { cn } from "@/lib/utils"
 import type { TuitionPlanDetail } from "@/types/tuition-types"
 
 import { deleteTuitionAction, updateTuitionAction } from "../../action/tuition"
@@ -55,7 +53,6 @@ function tuitionPlanToFormValues(
     teacherId: tuitionPlan.teacherId,
     name: tuitionPlan.name,
     monthlyPrice: tuitionPlan.monthlyPrice,
-    status: tuitionPlan.status === "inactive" ? "inactive" : "active",
   }
 }
 
@@ -198,51 +195,6 @@ export default function TuitionEditForm({
                       <FieldError>{fieldState.error?.message}</FieldError>
                     </Field>
                   )}
-                />
-
-                <Controller
-                  control={form.control}
-                  name="status"
-                  render={({ field, fieldState }) => {
-                    const isActive = field.value === "active"
-
-                    return (
-                      <Field data-invalid={!!fieldState.error}>
-                        <FieldLabel htmlFor="edit-tuition-status">
-                          Plan status
-                        </FieldLabel>
-                        <label
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-3 transition-colors",
-                            isActive && "border-primary bg-primary/5",
-                            isLoading && "cursor-not-allowed opacity-50"
-                          )}
-                        >
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-medium">
-                              {isActive ? "Active" : "Inactive"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {isActive
-                                ? "This plan can be assigned to students."
-                                : "Inactive plans are hidden from new assignments."}
-                            </p>
-                          </div>
-                          <Checkbox
-                            id="edit-tuition-status"
-                            disabled={isLoading}
-                            checked={isActive}
-                            onCheckedChange={(checked) =>
-                              field.onChange(
-                                checked === true ? "active" : "inactive"
-                              )
-                            }
-                          />
-                        </label>
-                        <FieldError>{fieldState.error?.message}</FieldError>
-                      </Field>
-                    )
-                  }}
                 />
               </FieldGroup>
             </FieldSet>

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { StudentListItem } from "@/types/student-type"
-import React from "react"
-import StudentHeader from "./student-header"
-import { SearchBar } from "@/components/search-bar"
+import { StudentListItem } from "@/types/student-type";
+import React from "react";
+import StudentHeader from "./student-header";
+import { SearchBar } from "@/components/search-bar";
 import {
   Table,
   TableBody,
@@ -11,14 +11,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useRouter } from "next/navigation"
-import { PaginationControls } from "@/components/pagination-controls"
-import { Badge } from "@/components/ui/badge"
-import StudentFilter from "./student-filter"
-import { Check, X } from "lucide-react"
-import { usePermissions } from "@/lib/permissions/usePermissions"
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
+import { PaginationControls } from "@/components/pagination-controls";
+import { Badge } from "@/components/ui/badge";
+import StudentFilter from "./student-filter";
+import { Check, X } from "lucide-react";
+import { usePermissions } from "@/lib/permissions/usePermissions";
+import { Button } from "@/components/ui/button";
 
 function StudentStatus({ status }: { status: string }) {
   switch (status) {
@@ -27,7 +28,7 @@ function StudentStatus({ status }: { status: string }) {
         <Badge variant="outline" className="bg-green-500 text-white capitalize">
           Active
         </Badge>
-      )
+      );
     case "inactive":
       return (
         <Badge
@@ -36,19 +37,19 @@ function StudentStatus({ status }: { status: string }) {
         >
           Inactive
         </Badge>
-      )
+      );
     case "suspended":
       return (
         <Badge variant="outline" className="bg-red-500 text-white capitalize">
           Suspended
         </Badge>
-      )
+      );
     case "checkedOut":
       return (
         <Badge variant="outline" className="bg-gray-500 text-white capitalize">
           Checked Out
         </Badge>
-      )
+      );
   }
 }
 
@@ -57,7 +58,7 @@ function formatAdmissionDate(value: string) {
     year: "numeric",
     month: "short",
     day: "numeric",
-  }).format(new Date(value))
+  }).format(new Date(value));
 }
 
 export default function StudentList({
@@ -65,12 +66,12 @@ export default function StudentList({
   total,
   totalPages,
 }: {
-  students: StudentListItem[]
-  total: number
-  totalPages: number
+  students: StudentListItem[];
+  total: number;
+  totalPages: number;
 }) {
-  const router = useRouter()
-  const {hasPermission} = usePermissions()
+  const router = useRouter();
+  const { hasPermission } = usePermissions();
   return (
     <div className="space-y-6">
       <StudentHeader />
@@ -99,7 +100,7 @@ export default function StudentList({
               <TableRow
                 onClick={() => {
                   if (hasPermission("student", "read")) {
-                    router.push(`/org/dashboard/students/${student.id}`)
+                    router.push(`/org/dashboard/students/${student.id}`);
                   }
                 }}
                 key={student.id}
@@ -138,9 +139,9 @@ export default function StudentList({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center">
+              <TableCell colSpan={6} className="text-center">
                 {" "}
-                No Students Found!
+                No Students Found!{" "}
               </TableCell>
             </TableRow>
           )}
@@ -148,5 +149,5 @@ export default function StudentList({
       </Table>
       <PaginationControls totalPages={totalPages} />
     </div>
-  )
+  );
 }

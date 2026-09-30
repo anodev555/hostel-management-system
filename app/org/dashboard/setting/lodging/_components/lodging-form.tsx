@@ -32,10 +32,12 @@ import {
   createLodgingSchema,
   type CreateLodgingSchemaType,
 } from "../schema/lodging-schema"
+import { usePermissions } from "@/lib/permissions/usePermissions"
 
 export default function LodgingForm() {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { hasPermission } = usePermissions()
 
   const form = useForm<CreateLodgingSchemaType>({
     resolver: zodResolver(createLodgingSchema),
@@ -80,12 +82,14 @@ export default function LodgingForm() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="lg" onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          Add Lodging
-        </Button>
-      </DialogTrigger>
+      {hasPermission("lodging", "create") && (
+        <DialogTrigger asChild>
+          <Button size="lg" onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            Add Lodging
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className={cn("sm:max-w-lg")}>
         <DialogTitle>Add Lodging Plan</DialogTitle>

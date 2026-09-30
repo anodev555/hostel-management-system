@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Building2 } from "lucide-react"
-import RoomForm from "./room-form"
+import { Card, CardContent } from "@/components/ui/card";
+import { Building2 } from "lucide-react";
+import RoomForm from "./room-form";
+import { PermissionGate } from "@/lib/permissions/permission-gate";
 
 export default function RoomHeader() {
   return (
@@ -22,8 +23,10 @@ export default function RoomHeader() {
         </div>
       </CardContent>
       <CardContent className="shrink-0 sm:pt-1">
-        <RoomForm />
+        <PermissionGate resource="room" action="create">
+          <RoomForm />
+        </PermissionGate>
       </CardContent>
     </Card>
-  )
+  );
 }

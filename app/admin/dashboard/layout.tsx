@@ -24,12 +24,21 @@ export default async function AdminDashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const requestHeaders = await headers()
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   })
 
   if (!session) {
     redirect("/login")
+  }
+
+  const adminUser = session.user as typeof session.user & {
+    isActive?: boolean | null
+  }
+  if (adminUser.isActive === false) {
+    await auth.api.signOut({ headers: requestHeaders }).catch(() => null)
+    redirect("/login?error=user-inactive")
   }
 
   if (session.user.role !== "superAdmin") {

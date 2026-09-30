@@ -1,19 +1,21 @@
-"use server"
-import { withAuth } from "@/lib/withAuth"
+"use server";
+import { withAuth } from "@/lib/withAuth";
 import {
   createRoomSchema,
   CreateRoomSchemaType,
   editRoomSchema,
   type EditRoomSchemaType,
-} from "../schema/room-schema"
-import { ActionResponse } from "@/types/action-response"
-import { RoomItem } from "@/types/room-type"
-import z from "zod"
-import db from "@/db"
-import { user } from "@/db/schema/auth-schema"
-import { lodgingPlan, room, studentRoomAssignment } from "@/db/schema"
-import { revalidatePath } from "next/cache"
-import { asc, and, eq, sql, count, isNull, max } from "drizzle-orm"
+  updateRoomStatusSchema,
+  type UpdateRoomStatusSchemaType,
+} from "../schema/room-schema";
+import { ActionResponse } from "@/types/action-response";
+import { RoomItem } from "@/types/room-type";
+import z from "zod";
+import db from "@/db";
+import { user } from "@/db/schema/auth-schema";
+import { lodgingPlan, room, studentRoomAssignment } from "@/db/schema";
+import { revalidatePath } from "next/cache";
+import { asc, and, eq, sql, count, isNull, max } from "drizzle-orm";
 export const createRoomAction = withAuth<
   CreateRoomSchemaType,
   ActionResponse<null>
@@ -29,17 +31,17 @@ export const createRoomAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = createRoomSchema.safeParse(data)
+    const parsed = createRoomSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid data",
         fieldErrors,
-      }
+      };
     }
 
     // verifying loddging plan id
@@ -51,9 +53,9 @@ export const createRoomAction = withAuth<
         and(
           eq(lodgingPlan.id, parsed.data.lodgingPlanId),
           eq(lodgingPlan.organizationId, organizationId),
-          eq(lodgingPlan.status, "active")
-        )
-      )
+          eq(lodgingPlan.status, "active"),
+        ),
+      );
 
     if (!lodgingplan) {
       return {
@@ -62,7 +64,7 @@ export const createRoomAction = withAuth<
         fieldErrors: {
           lodgingPlanId: ["Invalid or inactive lodging plan"],
         },
-      }
+      };
     }
 
     //inserting room data
@@ -76,19 +78,19 @@ export const createRoomAction = withAuth<
       lodgingPlanId: parsed.data.lodgingPlanId,
       organizationId: organizationId,
       createdBy: session.user.id,
-    })
-    revalidatePath("/org/dashboard/setting/room")
+    });
+    revalidatePath("/org/dashboard/setting/room");
     return {
       success: true,
       message: `Room ${parsed.data.roomNumber} created successfully`,
       data: null,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     const code =
       error instanceof Error && "cause" in error
         ? (error.cause as { code?: string } | undefined)?.code
-        : undefined
+        : undefined;
 
     if (code === "23505") {
       return {
@@ -97,31 +99,31 @@ export const createRoomAction = withAuth<
         fieldErrors: {
           roomNumber: ["This room number is already used in your organization"],
         },
-      }
+      };
     }
 
     return {
       success: false,
       message: "Internal server error",
-    }
+    };
   }
-})
+});
 
 //getRoomsAction
 
 type GetRoomsProps = {
-  search?: string
-  page?: string
-  perpage?: string
-}
+  search?: string;
+  page?: string;
+  perpage?: string;
+};
 
 type GetRoomsResponse = {
-  rooms: RoomItem[]
-  total: number
-  totalPages: number
-}
+  rooms: RoomItem[];
+  total: number;
+  totalPages: number;
+};
 
-type GetRoomsSchemaType = GetRoomsProps | null
+type GetRoomsSchemaType = GetRoomsProps | null;
 
 export const getRoomsAction = withAuth<
   GetRoomsSchemaType,
@@ -141,29 +143,29 @@ export const getRoomsAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsedPerPage = Number(data?.perpage)
+    const parsedPerPage = Number(data?.perpage);
     const perPage =
       Number.isFinite(parsedPerPage) && parsedPerPage > 0
         ? Math.min(Math.trunc(parsedPerPage), 20)
-        : 5
+        : 5;
 
-    const parsedPage = Number(data?.page)
+    const parsedPage = Number(data?.page);
     const currentPage =
       Number.isFinite(parsedPage) && parsedPage >= 1
         ? Math.trunc(parsedPage)
-        : 1
-    const offset = (currentPage - 1) * perPage
+        : 1;
+    const offset = (currentPage - 1) * perPage;
 
-    const search = data?.search?.trim()
+    const search = data?.search?.trim();
     const whereClause = search
       ? and(
           eq(room.organizationId, organizationId),
-          sql`cast(${room.roomNumber} as text) like ${`%${search}%`}`
+          sql`cast(${room.roomNumber} as text) like ${`%${search}%`}`,
         )
-      : eq(room.organizationId, organizationId)
+      : eq(room.organizationId, organizationId);
 
     const [rooms, [{ total }], [{ totalSearch }]] = await Promise.all([
       await db
@@ -197,9 +199,9 @@ export const getRoomsAction = withAuth<
         .where(eq(room.organizationId, organizationId)),
 
       db.select({ totalSearch: count() }).from(room).where(whereClause),
-    ])
+    ]);
 
-    const totalPages = Math.ceil(totalSearch / perPage)
+    const totalPages = Math.ceil(totalSearch / perPage);
     return {
       success: true,
       message: "Rooms fetched successfully",
@@ -208,24 +210,24 @@ export const getRoomsAction = withAuth<
         total,
         totalPages: totalPages,
       },
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to fetch rooms",
-    }
+    };
   }
-})
+});
 
 //get specific rooms
 type GetSpecificRoomDetailProps = {
-  roomId: string
-}
+  roomId: string;
+};
 
 const getSpecificRoomDetailSchema = z.object({
   roomId: z.uuid("Invalid room id"),
-})
+});
 
 export const getSpecificRoomDetailAction = withAuth<
   GetSpecificRoomDetailProps,
@@ -233,7 +235,7 @@ export const getSpecificRoomDetailAction = withAuth<
 >({
   roles: ["orgUser"],
   permissions: {
-    room: ["read"],
+    room: ["update"],
   },
   requireActiveOrg: true,
 })(async ({ data, organizationId }): Promise<ActionResponse<RoomItem>> => {
@@ -242,20 +244,20 @@ export const getSpecificRoomDetailAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = getSpecificRoomDetailSchema.safeParse(data)
+    const parsed = getSpecificRoomDetailSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid room id",
         fieldErrors,
-      }
+      };
     }
 
-    const { roomId } = parsed.data
+    const { roomId } = parsed.data;
 
     const [roomData] = await db
       .select({
@@ -277,28 +279,28 @@ export const getSpecificRoomDetailAction = withAuth<
       .from(room)
       .leftJoin(lodgingPlan, eq(room.lodgingPlanId, lodgingPlan.id))
       .leftJoin(user, eq(room.createdBy, user.id))
-      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
+      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)));
 
     if (!roomData) {
       return {
         success: false,
         message: "Room not found",
-      }
+      };
     }
 
     return {
       success: true,
       message: "Room fetched successfully",
       data: roomData,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to fetch room",
-    }
+    };
   }
-})
+});
 
 export const updateRoomAction = withAuth<
   EditRoomSchemaType,
@@ -315,17 +317,17 @@ export const updateRoomAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = editRoomSchema.safeParse(data)
+    const parsed = editRoomSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid data",
         fieldErrors,
-      }
+      };
     }
 
     const {
@@ -337,19 +339,18 @@ export const updateRoomAction = withAuth<
       attachedBathroom,
       airConditioner,
       lodgingPlanId,
-      status,
-    } = parsed.data
+    } = parsed.data;
 
     const [existingRoom] = await db
       .select({ id: room.id })
       .from(room)
-      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
+      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)));
 
     if (!existingRoom) {
       return {
         success: false,
         message: "Room not found",
-      }
+      };
     }
 
     const [validLodgingPlan] = await db
@@ -359,9 +360,9 @@ export const updateRoomAction = withAuth<
         and(
           eq(lodgingPlan.id, lodgingPlanId),
           eq(lodgingPlan.organizationId, organizationId),
-          eq(lodgingPlan.status, "active")
-        )
-      )
+          eq(lodgingPlan.status, "active"),
+        ),
+      );
 
     if (!validLodgingPlan) {
       const [currentPlan] = await db
@@ -372,9 +373,9 @@ export const updateRoomAction = withAuth<
           and(
             eq(room.id, roomId),
             eq(lodgingPlan.id, lodgingPlanId),
-            eq(lodgingPlan.organizationId, organizationId)
-          )
-        )
+            eq(lodgingPlan.organizationId, organizationId),
+          ),
+        );
 
       if (!currentPlan) {
         return {
@@ -383,11 +384,11 @@ export const updateRoomAction = withAuth<
           fieldErrors: {
             lodgingPlanId: ["Select a valid active lodging plan"],
           },
-        }
+        };
       }
     }
 
-    const newTotalBeds = Number(totalBeds)
+    const newTotalBeds = Number(totalBeds);
 
     const [occupancy] = await db
       .select({
@@ -399,10 +400,10 @@ export const updateRoomAction = withAuth<
           eq(studentRoomAssignment.roomId, roomId),
           eq(studentRoomAssignment.organizationId, organizationId),
           eq(studentRoomAssignment.status, "assigned"),
-          isNull(studentRoomAssignment.endDate)
-        )
-      )
-    const minBeds = occupancy?.maxBed ?? 0
+          isNull(studentRoomAssignment.endDate),
+        ),
+      );
+    const minBeds = occupancy?.maxBed ?? 0;
     if (newTotalBeds < minBeds) {
       return {
         success: false,
@@ -410,7 +411,7 @@ export const updateRoomAction = withAuth<
         fieldErrors: {
           totalBeds: [`Must be at least ${minBeds}`],
         },
-      }
+      };
     }
 
     const [updated] = await db
@@ -423,33 +424,32 @@ export const updateRoomAction = withAuth<
         attachedBathroom,
         airConditioner,
         lodgingPlanId,
-        status,
         updatedBy: session.user.id,
       })
       .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
-      .returning({ id: room.id })
+      .returning({ id: room.id });
 
     if (!updated) {
       return {
         success: false,
         message: "Room not found",
-      }
+      };
     }
 
-    revalidatePath("/org/dashboard/setting/room")
-    revalidatePath(`/org/dashboard/setting/room/${roomId}`)
+    revalidatePath("/org/dashboard/setting/room");
+    revalidatePath(`/org/dashboard/setting/room/${roomId}`);
 
     return {
       success: true,
       message: `Room ${roomNumber} updated successfully`,
       data: null,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     const code =
       error instanceof Error && "cause" in error
         ? (error.cause as { code?: string } | undefined)?.code
-        : undefined
+        : undefined;
 
     if (code === "23505") {
       return {
@@ -458,25 +458,89 @@ export const updateRoomAction = withAuth<
         fieldErrors: {
           roomNumber: ["This room number is already used in your organization"],
         },
-      }
+      };
     }
 
     return {
       success: false,
       message: "Internal server error",
-    }
+    };
   }
-})
+});
+
+//update room status only (toggled from the room list)
+export const updateRoomStatusAction = withAuth<
+  UpdateRoomStatusSchemaType,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    room: ["update"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId, session }): Promise<ActionResponse<null>> => {
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "No organization id found",
+      };
+    }
+
+    const parsed = updateRoomStatusSchema.safeParse(data);
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error);
+      return {
+        success: false,
+        message: "Invalid data",
+        fieldErrors,
+      };
+    }
+
+    const { roomId, status } = parsed.data;
+
+    const [updated] = await db
+      .update(room)
+      .set({
+        status,
+        updatedBy: session.user.id,
+      })
+      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
+      .returning({ id: room.id });
+
+    if (!updated) {
+      return {
+        success: false,
+        message: "Room not found",
+      };
+    }
+
+    revalidatePath("/org/dashboard/setting/room");
+    revalidatePath(`/org/dashboard/setting/room/${roomId}`);
+
+    return {
+      success: true,
+      message: `Room marked as ${status} successfully`,
+      data: null,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      success: false,
+      message: "Internal server error",
+    };
+  }
+});
 
 //delete room
 
 type DeleteRoomProps = {
-  roomId: string
-}
+  roomId: string;
+};
 
 const deleteRoomSchema = z.object({
   roomId: z.uuid("Invalid room id"),
-})
+});
 
 export const deleteRoomAction = withAuth<DeleteRoomProps, ActionResponse<null>>(
   {
@@ -485,37 +549,37 @@ export const deleteRoomAction = withAuth<DeleteRoomProps, ActionResponse<null>>(
       room: ["delete"],
     },
     requireActiveOrg: true,
-  }
+  },
 )(async ({ data, organizationId }): Promise<ActionResponse<null>> => {
   try {
     if (!organizationId) {
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
-    const parsed = deleteRoomSchema.safeParse(data)
+    const parsed = deleteRoomSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid data",
         fieldErrors,
-      }
+      };
     }
 
-    const { roomId } = parsed.data
+    const { roomId } = parsed.data;
 
     const [existsRoom] = await db
       .select()
       .from(room)
-      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
+      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)));
 
     if (!existsRoom) {
       return {
         success: false,
         message: "Room not found",
-      }
+      };
     }
 
     const [activeAssignment] = await db
@@ -526,45 +590,45 @@ export const deleteRoomAction = withAuth<DeleteRoomProps, ActionResponse<null>>(
           eq(studentRoomAssignment.roomId, roomId),
           eq(studentRoomAssignment.organizationId, organizationId),
           eq(studentRoomAssignment.status, "assigned"),
-          isNull(studentRoomAssignment.endDate)
-        )
-      )
+          isNull(studentRoomAssignment.endDate),
+        ),
+      );
 
     if (activeAssignment) {
       return {
         success: false,
         message:
           "Cannot delete this room while students are assigned. Release or reassign them first.",
-      }
+      };
     }
 
     await db
       .delete(room)
-      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)))
-    revalidatePath("/org/dashboard/setting/room")
-    revalidatePath(`/org/dashboard/setting/room/${roomId}`)
+      .where(and(eq(room.id, roomId), eq(room.organizationId, organizationId)));
+    revalidatePath("/org/dashboard/setting/room");
+    revalidatePath(`/org/dashboard/setting/room/${roomId}`);
 
     return {
       success: true,
       message: "Room deleted successfully",
       data: null,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     const code =
       error instanceof Error && "cause" in error
         ? (error.cause as { code?: string } | undefined)?.code
-        : undefined
+        : undefined;
     if (code === "23505") {
       return {
         success: false,
         message:
           "Room has a past assignment history of students. Marked it as inactive instead.",
-      }
+      };
     }
     return {
       success: false,
       message: "Something went wrong",
-    }
+    };
   }
-})
+});

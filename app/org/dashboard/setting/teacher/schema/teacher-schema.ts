@@ -61,11 +61,24 @@ export const createTeacherDefaultValues: CreateTeacherSchemaType = {
   monthlySalary: "",
 }
 
-export const editTeacherSchema = createTeacherSchema.extend({
-  teacherId: z.uuid("Invalid teacher id"),
-})
+export const editTeacherSchema = createTeacherSchema
+  .omit({ status: true })
+  .extend({
+    teacherId: z.uuid("Invalid teacher id"),
+  })
 
 export type EditTeacherSchemaType = z.infer<typeof editTeacherSchema>
+
+export const updateTeacherStatusSchema = z.object({
+  teacherId: z.uuid("Invalid teacher id"),
+  status: z.enum(teacherStatusValues, {
+    message: "Invalid teacher status",
+  }),
+})
+
+export type UpdateTeacherStatusSchemaType = z.infer<
+  typeof updateTeacherStatusSchema
+>
 
 export const deleteTeacherSchema = z.object({
   teacherId: z.uuid("Invalid teacher id"),

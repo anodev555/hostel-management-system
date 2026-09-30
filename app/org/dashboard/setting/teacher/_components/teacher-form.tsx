@@ -26,6 +26,7 @@ import {
   Select,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { usePermissions } from "@/lib/permissions/usePermissions"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Loader2 } from "lucide-react"
 
@@ -43,6 +44,7 @@ import {
 export default function TeacherForm() {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { hasPermission } = usePermissions()
 
   const form = useForm<CreateTeacherSchemaType>({
     resolver: zodResolver(createTeacherSchema),
@@ -86,12 +88,14 @@ export default function TeacherForm() {
   }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="lg">
-          <Plus className="size-4" />
-          Add teacher
-        </Button>
-      </DialogTrigger>
+      {hasPermission("tuition", "create") && (
+        <DialogTrigger asChild>
+          <Button size="lg">
+            <Plus className="size-4" />
+            Add teacher
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogTitle>Add teacher</DialogTitle>
         <DialogDescription>

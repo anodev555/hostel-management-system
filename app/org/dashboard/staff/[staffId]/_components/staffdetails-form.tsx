@@ -15,8 +15,11 @@ import StaffSalary from "./staff-salary";
 import StaffSecurity from "./staff-security";
 import { ArrowLeft, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import DeleteStaffDialog from "./staff-deletedialog";
+import MarkStaffLeftDialog from "./staff-markleft-dialog";
+import { PermissionGate } from "@/lib/permissions/permission-gate";
 
 export default function StaffDetailsForm({
   staffData,
@@ -56,10 +59,22 @@ export default function StaffDetailsForm({
               </p>
             </div>
           </div>
-          <DeleteStaffDialog
-            userId={staffData.staffDetail.userId}
-            memberId={staffData.staffDetail.id}
-          />
+          <div className="flex items-center gap-2">
+            {staffData.staffDetail.isActive === false ? (
+              <Badge variant="secondary">Left / Inactive</Badge>
+            ) : (
+              <PermissionGate resource="staff" action="update">
+                <MarkStaffLeftDialog memberId={staffData.staffDetail.id} />
+              </PermissionGate>
+            )}
+            <PermissionGate resource="staff" action="delete">
+              {" "}
+              <DeleteStaffDialog
+                userId={staffData.staffDetail.userId}
+                memberId={staffData.staffDetail.id}
+              />
+            </PermissionGate>
+          </div>
         </div>
       </div>
       <Tabs defaultValue="profile" className="w-full">

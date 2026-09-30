@@ -1,32 +1,34 @@
-"use server"
+"use server";
 
-import { desc, eq, like, and, inArray, isNull } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
-import z from "zod"
+import { desc, eq, like, and, inArray, isNull } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import z from "zod";
 
-import db from "@/db"
-import { user } from "@/db/schema/auth-schema"
-import { lodgingPlan, room } from "@/db/schema/room-schema"
-import { withAuth } from "@/lib/withAuth"
-import { ActionResponse } from "@/types/action-response"
-import { LodgingItem } from "@/types/lodging-types"
+import db from "@/db";
+import { user } from "@/db/schema/auth-schema";
+import { lodgingPlan, room } from "@/db/schema/room-schema";
+import { withAuth } from "@/lib/withAuth";
+import { ActionResponse } from "@/types/action-response";
+import { LodgingItem } from "@/types/lodging-types";
 
 import {
   createLodgingSchema,
   deleteLodgingSchema,
   editLodgingSchema,
+  updateLodgingStatusSchema,
   type CreateLodgingSchemaType,
   type DeleteLodgingSchemaType,
   type EditLodgingSchemaType,
-} from "../schema/lodging-schema"
-import { studentRoomAssignment } from "@/db/schema"
-import { format, subDays } from "date-fns"
-import { log } from "console"
+  type UpdateLodgingStatusSchemaType,
+} from "../schema/lodging-schema";
+import { studentRoomAssignment } from "@/db/schema";
+import { format, subDays } from "date-fns";
+import { log } from "console";
 
 //get lodging data
 type GetLodgingProps = {
-  search?: string
-}
+  search?: string;
+};
 
 export const getLodgingAction = withAuth<
   GetLodgingProps | null,
@@ -48,10 +50,10 @@ export const getLodgingAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const search = data?.search?.trim()
+    const search = data?.search?.trim();
 
     const lodgingData = await db
       .select({
@@ -70,25 +72,25 @@ export const getLodgingAction = withAuth<
         search
           ? and(
               eq(lodgingPlan.organizationId, organizationId),
-              like(lodgingPlan.name, `%${search}%`)
+              like(lodgingPlan.name, `%${search}%`),
             )
-          : eq(lodgingPlan.organizationId, organizationId)
+          : eq(lodgingPlan.organizationId, organizationId),
       )
-      .orderBy(desc(lodgingPlan.createdAt))
+      .orderBy(desc(lodgingPlan.createdAt));
 
     return {
       success: true,
       message: "Lodging plans fetched successfully",
       data: lodgingData,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to fetch lodging plans",
-    }
+    };
   }
-})
+});
 
 //create lodging data
 export const createLodgingAction = withAuth<
@@ -106,20 +108,20 @@ export const createLodgingAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = createLodgingSchema.safeParse(data)
+    const parsed = createLodgingSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid data",
         fieldErrors,
-      }
+      };
     }
 
-    const { name, monthlyPrice } = parsed.data
+    const { name, monthlyPrice } = parsed.data;
 
     await db.insert(lodgingPlan).values({
       organizationId,
@@ -127,21 +129,21 @@ export const createLodgingAction = withAuth<
       monthlyPrice,
       status: "active",
       createdBy: session.user.id,
-    })
+    });
 
-    revalidatePath("/org/dashboard/setting/lodging")
+    revalidatePath("/org/dashboard/setting/lodging");
 
     return {
       success: true,
       message: `Lodging plan "${name}" created successfully`,
       data: null,
-    }
+    };
   } catch (error: unknown) {
-    console.error(error)
+    console.error(error);
     const code =
       error instanceof Error && "cause" in error
         ? (error.cause as { code?: string } | undefined)?.code
-        : undefined
+        : undefined;
 
     if (code === "23505") {
       return {
@@ -150,24 +152,24 @@ export const createLodgingAction = withAuth<
         fieldErrors: {
           name: ["This name is already used in your organization"],
         },
-      }
+      };
     }
 
     return {
       success: false,
       message: "Internal server error",
-    }
+    };
   }
-})
+});
 
 //get specific lodging data
 type GetSpecificLodgingProps = {
-  lodgingId: string
-}
+  lodgingId: string;
+};
 
 const getSpecificLodgingSchema = z.object({
   lodgingId: z.uuid("Invalid lodging id"),
-})
+});
 
 export const getSpecificLodgingAction = withAuth<
   GetSpecificLodgingProps,
@@ -184,20 +186,20 @@ export const getSpecificLodgingAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = getSpecificLodgingSchema.safeParse(data)
+    const parsed = getSpecificLodgingSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid lodging id",
         fieldErrors,
-      }
+      };
     }
 
-    const { lodgingId } = parsed.data
+    const { lodgingId } = parsed.data;
 
     const [lodging] = await db
       .select({
@@ -215,30 +217,30 @@ export const getSpecificLodgingAction = withAuth<
       .where(
         and(
           eq(lodgingPlan.id, lodgingId),
-          eq(lodgingPlan.organizationId, organizationId)
-        )
-      )
+          eq(lodgingPlan.organizationId, organizationId),
+        ),
+      );
 
     if (!lodging) {
       return {
         success: false,
         message: "Lodging plan not found",
-      }
+      };
     }
 
     return {
       success: true,
       message: "Lodging plan fetched successfully",
       data: lodging,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to fetch lodging plan",
-    }
+    };
   }
-})
+});
 
 export const updateLodgingAction = withAuth<
   EditLodgingSchemaType,
@@ -255,20 +257,20 @@ export const updateLodgingAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = editLodgingSchema.safeParse(data)
+    const parsed = editLodgingSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid data",
         fieldErrors,
-      }
+      };
     }
 
-    const { lodgingId, name, monthlyPrice, status } = parsed.data
+    const { lodgingId, name, monthlyPrice } = parsed.data;
 
     //check existing lodging plan
 
@@ -280,36 +282,35 @@ export const updateLodgingAction = withAuth<
       .where(
         and(
           eq(lodgingPlan.id, lodgingId),
-          eq(lodgingPlan.organizationId, organizationId)
-        )
-      )
+          eq(lodgingPlan.organizationId, organizationId),
+        ),
+      );
 
     if (!existing) {
       return {
         success: false,
         message: "Lodging plan not found",
-      }
+      };
     }
 
-    const priceChanged = Number(existing.monthlyPrice) !== Number(monthlyPrice)
+    const priceChanged = Number(existing.monthlyPrice) !== Number(monthlyPrice);
     await db.transaction(async (tx) => {
       await tx
         .update(lodgingPlan)
         .set({
           name,
           monthlyPrice,
-          status,
           updatedBy: session.user.id,
         })
         .where(
           and(
             eq(lodgingPlan.id, lodgingId),
-            eq(lodgingPlan.organizationId, organizationId)
-          )
+            eq(lodgingPlan.organizationId, organizationId),
+          ),
         )
-        .returning({ id: lodgingPlan.id })
+        .returning({ id: lodgingPlan.id });
 
-      if (!priceChanged) return
+      if (!priceChanged) return;
 
       //get all rooms usign that this plan
       const roomsOnPlan = await tx
@@ -318,20 +319,20 @@ export const updateLodgingAction = withAuth<
         .where(
           and(
             eq(room.lodgingPlanId, lodgingId),
-            eq(room.organizationId, organizationId)
-          )
-        )
+            eq(room.organizationId, organizationId),
+          ),
+        );
 
-      const roomIds = roomsOnPlan.map((r) => r.id)
-      if (roomIds.length === 0) return
+      const roomIds = roomsOnPlan.map((r) => r.id);
+      if (roomIds.length === 0) return;
 
       //update the room assignment prices
-      const today = new Date()
-      const effectiveDate = format(today, "yyyy-MM-dd")
+      const today = new Date();
+      const effectiveDate = format(today, "yyyy-MM-dd");
       const previousDate = format(
         subDays(new Date(effectiveDate), 1),
-        "yyyy-MM-dd"
-      )
+        "yyyy-MM-dd",
+      );
 
       const activeAssignments = await tx
         .select({
@@ -347,9 +348,9 @@ export const updateLodgingAction = withAuth<
             inArray(studentRoomAssignment.roomId, roomIds),
             eq(studentRoomAssignment.organizationId, organizationId),
             eq(studentRoomAssignment.status, "assigned"),
-            isNull(studentRoomAssignment.endDate)
-          )
-        )
+            isNull(studentRoomAssignment.endDate),
+          ),
+        );
 
       //released or updated assignments and create new assignment with new price updated
       for (const assignment of activeAssignments) {
@@ -357,8 +358,8 @@ export const updateLodgingAction = withAuth<
           await tx
             .update(studentRoomAssignment)
             .set({ lodgingAmount: monthlyPrice })
-            .where(eq(studentRoomAssignment.id, assignment.id))
-          continue
+            .where(eq(studentRoomAssignment.id, assignment.id));
+          continue;
         }
         //1 closed the old billing assignments
         await tx
@@ -369,7 +370,7 @@ export const updateLodgingAction = withAuth<
             releasedAt: new Date(),
             releasedBy: session.user.id,
           })
-          .where(and(eq(studentRoomAssignment.id, assignment.id)))
+          .where(and(eq(studentRoomAssignment.id, assignment.id)));
 
         //2 create new assignment with new price
         await tx.insert(studentRoomAssignment).values({
@@ -381,24 +382,24 @@ export const updateLodgingAction = withAuth<
           startDate: effectiveDate,
           status: "assigned",
           assignedBy: session.user.id,
-        })
+        });
       }
-    })
+    });
 
-    revalidatePath("/org/dashboard/setting/lodging")
-    revalidatePath(`/org/dashboard/setting/lodging/${lodgingId}`)
+    revalidatePath("/org/dashboard/setting/lodging");
+    revalidatePath(`/org/dashboard/setting/lodging/${lodgingId}`);
 
     return {
       success: true,
       message: `Lodging plan "${name}" updated successfully`,
       data: null,
-    }
+    };
   } catch (error: unknown) {
-    console.error(error)
+    console.error(error);
     const code =
       error instanceof Error && "cause" in error
         ? (error.cause as { code?: string } | undefined)?.code
-        : undefined
+        : undefined;
 
     if (code === "23505") {
       return {
@@ -407,15 +408,84 @@ export const updateLodgingAction = withAuth<
         fieldErrors: {
           name: ["This name is already used in your organization"],
         },
-      }
+      };
     }
 
     return {
       success: false,
       message: "Something went wrong",
-    }
+    };
   }
-})
+});
+
+//update lodging plan status only (toggled from the lodging list)
+export const updateLodgingStatusAction = withAuth<
+  UpdateLodgingStatusSchemaType,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    lodging: ["update"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId, session }): Promise<ActionResponse<null>> => {
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "No organization id found",
+      };
+    }
+
+    const parsed = updateLodgingStatusSchema.safeParse(data);
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error);
+      return {
+        success: false,
+        message: "Invalid data",
+        fieldErrors,
+      };
+    }
+
+    const { lodgingId, status } = parsed.data;
+
+    const [updated] = await db
+      .update(lodgingPlan)
+      .set({
+        status,
+        updatedBy: session.user.id,
+      })
+      .where(
+        and(
+          eq(lodgingPlan.id, lodgingId),
+          eq(lodgingPlan.organizationId, organizationId),
+        ),
+      )
+      .returning({ id: lodgingPlan.id });
+
+    if (!updated) {
+      return {
+        success: false,
+        message: "Lodging plan not found",
+      };
+    }
+
+    revalidatePath("/org/dashboard/setting/lodging");
+    revalidatePath(`/org/dashboard/setting/lodging/${lodgingId}`);
+
+    return {
+      success: true,
+      message: `Lodging plan marked as ${status} successfully`,
+      data: null,
+    };
+  } catch (error: unknown) {
+    console.error(error);
+    return {
+      success: false,
+      message: "Something went wrong",
+    };
+  }
+});
 
 export const deleteLodgingAction = withAuth<
   DeleteLodgingSchemaType,
@@ -432,20 +502,20 @@ export const deleteLodgingAction = withAuth<
       return {
         success: false,
         message: "No organization id found",
-      }
+      };
     }
 
-    const parsed = deleteLodgingSchema.safeParse(data)
+    const parsed = deleteLodgingSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid lodging id",
         fieldErrors,
-      }
+      };
     }
 
-    const { lodgingId } = parsed.data
+    const { lodgingId } = parsed.data;
 
     const [existing] = await db
       .select({ id: lodgingPlan.id, name: lodgingPlan.name })
@@ -453,15 +523,15 @@ export const deleteLodgingAction = withAuth<
       .where(
         and(
           eq(lodgingPlan.id, lodgingId),
-          eq(lodgingPlan.organizationId, organizationId)
-        )
-      )
+          eq(lodgingPlan.organizationId, organizationId),
+        ),
+      );
 
     if (!existing) {
       return {
         success: false,
         message: "Lodging plan not found",
-      }
+      };
     }
 
     const [roomUsingPlan] = await db
@@ -470,17 +540,17 @@ export const deleteLodgingAction = withAuth<
       .where(
         and(
           eq(room.lodgingPlanId, lodgingId),
-          eq(room.organizationId, organizationId)
-        )
+          eq(room.organizationId, organizationId),
+        ),
       )
-      .limit(1)
+      .limit(1);
 
     if (roomUsingPlan) {
       return {
         success: false,
         message:
           "Cannot delete this plan because it is assigned to one or more rooms. Reassign or remove those rooms first.",
-      }
+      };
     }
 
     await db
@@ -488,22 +558,22 @@ export const deleteLodgingAction = withAuth<
       .where(
         and(
           eq(lodgingPlan.id, lodgingId),
-          eq(lodgingPlan.organizationId, organizationId)
-        )
-      )
+          eq(lodgingPlan.organizationId, organizationId),
+        ),
+      );
 
-    revalidatePath("/org/dashboard/setting/lodging")
+    revalidatePath("/org/dashboard/setting/lodging");
 
     return {
       success: true,
       message: `Lodging plan "${existing.name}" deleted successfully`,
       data: null,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: "Failed to delete lodging plan",
-    }
+    };
   }
-})
+});

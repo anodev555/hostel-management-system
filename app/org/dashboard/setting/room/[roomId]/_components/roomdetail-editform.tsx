@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft, DoorOpen, Loader2, TrashIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { toast } from "sonner"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, DoorOpen, Loader2, TrashIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
-import { FormSaveBar } from "@/app/org/dashboard/_components/form-save-bar"
-import { getLodgingAction } from "@/app/org/dashboard/setting/lodging/action/lodging"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { FormSaveBar } from "@/app/org/dashboard/_components/form-save-bar";
+import { getLodgingAction } from "@/app/org/dashboard/setting/lodging/action/lodging";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -25,23 +25,22 @@ import {
   FieldGroup,
   FieldLabel,
   FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
-import type { RoomItem } from "@/types/room-type"
+} from "@/components/ui/select";
+import type { RoomItem } from "@/types/room-type";
 
-import { deleteRoomAction, updateRoomAction } from "../../action/rooms"
+import { deleteRoomAction, updateRoomAction } from "../../action/rooms";
 import {
   editRoomSchema,
   type EditRoomSchemaType,
-} from "../../schema/room-schema"
+} from "../../schema/room-schema";
 import {
   Dialog,
   DialogContent,
@@ -50,12 +49,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import { PermissionGate } from "@/lib/permissions/permission-gate";
 
 type LodgingOption = {
-  id: string
-  name: string
-}
+  id: string;
+  name: string;
+};
 
 function roomToFormValues(room: RoomItem): EditRoomSchemaType {
   return {
@@ -67,123 +67,122 @@ function roomToFormValues(room: RoomItem): EditRoomSchemaType {
     attachedBathroom: room.attachedBathroom,
     airConditioner: room.airConditioner,
     lodgingPlanId: room.lodgingPlanId,
-    status: room.status === "inactive" ? "inactive" : "active",
-  }
+  };
 }
 
 function formatDate(value: Date | string | null | undefined) {
-  if (!value) return "—"
+  if (!value) return "—";
   return new Date(value).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
+  });
 }
 
 export default function RoomDetailEditForm({ room }: { room: RoomItem }) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingPlans, setIsLoadingPlans] = useState(false)
-  const [lodgingPlans, setLodgingPlans] = useState<LodgingOption[]>([])
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [lodgingPlans, setLodgingPlans] = useState<LodgingOption[]>([]);
 
-  const defaultValues = useMemo(() => roomToFormValues(room), [room])
+  const defaultValues = useMemo(() => roomToFormValues(room), [room]);
 
   const form = useForm<EditRoomSchemaType>({
     resolver: zodResolver(editRoomSchema),
     defaultValues,
-  })
+  });
 
-  const { isDirty } = form.formState
-
-  useEffect(() => {
-    form.reset(roomToFormValues(room))
-  }, [room.id, room.lodgingPlanId, room.updatedAt, form])
+  const { isDirty } = form.formState;
 
   useEffect(() => {
-    let cancelled = false
+    form.reset(roomToFormValues(room));
+  }, [room.id, room.lodgingPlanId, room.updatedAt, form]);
+
+  useEffect(() => {
+    let cancelled = false;
 
     async function loadLodgingPlans() {
-      setIsLoadingPlans(true)
+      setIsLoadingPlans(true);
       try {
-        const response = await getLodgingAction(null)
-        if (cancelled) return
+        const response = await getLodgingAction(null);
+        if (cancelled) return;
 
         if (!response.success || !response.data) {
-          toast.error(response.message ?? "Failed to load lodging plans")
-          setLodgingPlans([])
-          return
+          toast.error(response.message ?? "Failed to load lodging plans");
+          setLodgingPlans([]);
+          return;
         }
 
         const activePlans = response.data
           .filter((plan) => plan.status === "active")
-          .map((plan) => ({ id: plan.id, name: plan.name }))
+          .map((plan) => ({ id: plan.id, name: plan.name }));
 
         const currentPlanInList = activePlans.some(
-          (plan) => plan.id === room.lodgingPlanId
-        )
+          (plan) => plan.id === room.lodgingPlanId,
+        );
 
         if (!currentPlanInList) {
           activePlans.unshift({
             id: room.lodgingPlanId,
             name: room.lodgingPlanName ?? "Current lodging plan",
-          })
+          });
         }
 
-        setLodgingPlans(activePlans)
+        setLodgingPlans(activePlans);
       } catch (error) {
         if (!cancelled) {
           toast.error(
             error instanceof Error
               ? error.message
-              : "Failed to load lodging plans"
-          )
-          setLodgingPlans([])
+              : "Failed to load lodging plans",
+          );
+          setLodgingPlans([]);
         }
       } finally {
         if (!cancelled) {
-          setIsLoadingPlans(false)
+          setIsLoadingPlans(false);
         }
       }
     }
 
-    loadLodgingPlans()
+    loadLodgingPlans();
 
     return () => {
-      cancelled = true
-    }
-  }, [room.lodgingPlanId, room.lodgingPlanName])
+      cancelled = true;
+    };
+  }, [room.lodgingPlanId, room.lodgingPlanName]);
 
   async function onSubmit(values: EditRoomSchemaType) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await updateRoomAction(values)
+      const response = await updateRoomAction(values);
       if (response.success) {
-        form.reset(values)
-        toast.success(response.message ?? "Room updated successfully")
-        router.refresh()
+        form.reset(values);
+        toast.success(response.message ?? "Room updated successfully");
+        router.refresh();
       } else {
-        toast.error(response.message)
+        toast.error(response.message);
         if (response.fieldErrors) {
           Object.entries(response.fieldErrors).forEach(([field, errors]) => {
             if (errors.length > 0) {
               form.setError(field as keyof EditRoomSchemaType, {
                 message: errors[0],
-              })
+              });
             }
-          })
+          });
         }
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update room"
-      )
+        error instanceof Error ? error.message : "Failed to update room",
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   function handleReset() {
-    form.reset(defaultValues)
+    form.reset(defaultValues);
   }
 
   return (
@@ -211,7 +210,9 @@ export default function RoomDetailEditForm({ room }: { room: RoomItem }) {
                 {formatDate(room.createdAt)}.
               </CardDescription>
             </div>
-            <DeleteRoomDialog room={room} />
+            <PermissionGate resource="room" action="delete">
+              <DeleteRoomDialog room={room} />
+            </PermissionGate>
           </div>
         </CardHeader>
 
@@ -391,54 +392,6 @@ export default function RoomDetailEditForm({ room }: { room: RoomItem }) {
                     </Field>
                   )}
                 />
-
-                <Controller
-                  control={form.control}
-                  name="status"
-                  render={({ field, fieldState }) => {
-                    const isActive = field.value === "active"
-
-                    return (
-                      <Field
-                        data-invalid={!!fieldState.error}
-                        className="sm:col-span-2"
-                      >
-                        <FieldLabel htmlFor="edit-room-status">
-                          Status
-                        </FieldLabel>
-                        <label
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-3 transition-colors",
-                            isActive && "border-primary bg-primary/5",
-                            isLoading && "cursor-not-allowed opacity-50"
-                          )}
-                        >
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-medium">
-                              {isActive ? "Active" : "Inactive"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {isActive
-                                ? "Room is available for student assignments."
-                                : "Inactive rooms are hidden from new assignments."}
-                            </p>
-                          </div>
-                          <Checkbox
-                            id="edit-room-status"
-                            disabled={isLoading}
-                            checked={isActive}
-                            onCheckedChange={(checked) =>
-                              field.onChange(
-                                checked === true ? "active" : "inactive"
-                              )
-                            }
-                          />
-                        </label>
-                        <FieldError>{fieldState.error?.message}</FieldError>
-                      </Field>
-                    )
-                  }}
-                />
               </FieldGroup>
             </FieldSet>
           </form>
@@ -459,30 +412,30 @@ export default function RoomDetailEditForm({ room }: { room: RoomItem }) {
         cancelLabel="Cancel"
       />
     </div>
-  )
+  );
 }
 
 function DeleteRoomDialog({ room }: { room: RoomItem }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const router = useRouter()
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   async function handleDelete() {
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      const response = await deleteRoomAction({ roomId: room.id })
+      const response = await deleteRoomAction({ roomId: room.id });
       if (response.success) {
-        toast.success(response.message ?? "Room deleted successfully")
-        setIsOpen(false)
-        router.push("/org/dashboard/setting/room")
+        toast.success(response.message ?? "Room deleted successfully");
+        setIsOpen(false);
+        router.push("/org/dashboard/setting/room");
       } else {
-        toast.error(response.message ?? "Failed to delete room")
+        toast.error(response.message ?? "Failed to delete room");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete room"
-      )
+        error instanceof Error ? error.message : "Failed to delete room",
+      );
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
   }
   return (
@@ -521,5 +474,5 @@ function DeleteRoomDialog({ room }: { room: RoomItem }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,6 +1,7 @@
 "use server";
 import db from "@/db";
 import { member, user } from "@/db/schema";
+import { session as sessionTable } from "@/db/schema/auth-schema";
 import { withAuth } from "@/lib/withAuth";
 import { ActionResponse } from "@/types/action-response";
 import { and, eq } from "drizzle-orm";
@@ -60,6 +61,14 @@ export const updateStaffStatusAction = withAuth<
         isActive: data.status,
       })
       .where(and(eq(user.id, memberRow[0].userId)));
+
+    // Deactivation takes effect immediately: drop existing sessions so the
+    // user cannot keep using an old cookie.
+    if (data.status === false) {
+      await db
+        .delete(sessionTable)
+        .where(eq(sessionTable.userId, memberRow[0].userId));
+    }
 
     revalidatePath("org/dashboard/staff");
     return {

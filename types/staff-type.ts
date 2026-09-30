@@ -29,6 +29,7 @@ export type StaffDetail = {
   email: string | null
   displayUsername: string | null
   image: string | null
+  isActive: boolean | null
   salary: string | null
 }
 

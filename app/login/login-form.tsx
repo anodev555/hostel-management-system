@@ -21,6 +21,10 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/authClient"
+import {
+  ORG_INACTIVE_MESSAGE,
+  USER_INACTIVE_MESSAGE,
+} from "@/lib/auth-messages"
 import { getDashboardForRole } from "@/lib/get-dashboard-for-role"
 import { cn } from "@/lib/utils"
 import {
@@ -67,13 +71,42 @@ export default function LoginForm() {
       })
 
       if (error) {
-        toast.error("Invalid username or password")
+        const serverMessage = error.message ?? ""
+        if (
+          serverMessage.includes(USER_INACTIVE_MESSAGE) ||
+          serverMessage.toLowerCase().includes("hostel administrator")
+        ) {
+          toast.error(USER_INACTIVE_MESSAGE)
+        } else if (
+          serverMessage.includes(ORG_INACTIVE_MESSAGE) ||
+          serverMessage.toLowerCase().includes("contact administration")
+        ) {
+          toast.error(ORG_INACTIVE_MESSAGE)
+        } else {
+          toast.error("Invalid username or password")
+        }
         return
       }
 
       if (!data) {
         toast.error("Something went wrong. Please try again.")
         return
+      }
+
+      // Defense in depth: server hook blocks inactive logins, but if a
+      // session was still issued (e.g. race), verify status before routing.
+      try {
+        const freshSession = await authClient.getSession()
+        const freshUser = freshSession?.data?.user as
+          | { isActive?: boolean | null }
+          | undefined
+        if (freshUser?.isActive === false) {
+          await authClient.signOut()
+          toast.error(USER_INACTIVE_MESSAGE)
+          return
+        }
+      } catch {
+        // Fall through to dashboard routing; server guards still apply.
       }
 
       router.push(getDashboardForRole(data.user.role) ?? "/")

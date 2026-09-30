@@ -33,12 +33,18 @@ export const roomStatusValues = ["active", "inactive"] as const
 
 export const editRoomSchema = createRoomSchema.extend({
   roomId: z.uuid("Invalid room id"),
+})
+
+export type EditRoomSchemaType = z.infer<typeof editRoomSchema>
+
+export const updateRoomStatusSchema = z.object({
+  roomId: z.uuid("Invalid room id"),
   status: z.enum(roomStatusValues, {
     message: "Invalid room status",
   }),
 })
 
-export type EditRoomSchemaType = z.infer<typeof editRoomSchema>
+export type UpdateRoomStatusSchemaType = z.infer<typeof updateRoomStatusSchema>
 
 export const createRoomDefaultValues: CreateRoomSchemaType = {
   roomNumber: "",

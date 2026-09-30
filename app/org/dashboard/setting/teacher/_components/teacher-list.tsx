@@ -1,13 +1,13 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2, PencilIcon, Plus, UserRound } from "lucide-react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { Loader2, Plus, UserRound } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import StatusSwitch from "@/app/org/dashboard/_components/status-switch"
 import { PaginationControls } from "@/components/pagination-controls"
 import { SearchBar } from "@/components/search-bar"
 import { Badge } from "@/components/ui/badge"
@@ -45,9 +45,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { usePermissions } from "@/lib/permissions/usePermissions"
 import type { GetTeachersResponse } from "@/types/teacher-types"
 
 import { createTeacherAction } from "../action/teacher"
+import { updateTeacherStatusAction } from "../[teacherId]/action/teacher-updatedelete"
 import {
   createTeacherDefaultValues,
   createTeacherSchema,
@@ -56,8 +58,69 @@ import {
 } from "../schema/teacher-schema"
 import TeacherForm from "./teacher-form"
 
+type TeacherListItem = GetTeachersResponse["teachers"][number]
+
+function TeacherStatusCell({ teacher }: { teacher: TeacherListItem }) {
+  const { hasPermission } = usePermissions()
+  const [isPending, setIsPending] = useState(false)
+  const [isActive, setIsActive] = useState(teacher.status === "active")
+
+  async function handleToggle(checked: boolean) {
+    if (isPending) return
+    const nextStatus = checked ? "active" : "inactive"
+    const previous = isActive
+    setIsActive(checked)
+    setIsPending(true)
+    try {
+      const response = await updateTeacherStatusAction({
+        teacherId: teacher.id,
+        status: nextStatus,
+      })
+      if (response.success) {
+        toast.success(response.message ?? `Teacher marked as ${nextStatus}`)
+      } else {
+        setIsActive(previous)
+        toast.error(response.message ?? "Failed to update teacher status")
+      }
+    } catch (error) {
+      setIsActive(previous)
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update teacher status"
+      )
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge
+        variant="outline"
+        className={
+          isActive
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+            : "border-muted-foreground/30 bg-muted text-muted-foreground"
+        }
+      >
+        {isActive ? "active" : "inactive"}
+      </Badge>
+      {hasPermission("tuition", "update") && (
+        <StatusSwitch
+          checked={isActive}
+          pending={isPending}
+          activeLabel="Mark teacher inactive"
+          inactiveLabel="Mark teacher active"
+          onToggle={handleToggle}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function TeacherList({ data }: { data: GetTeachersResponse }) {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { hasPermission } = usePermissions()
   const search = searchParams.get("search")
   const { teachers, totalPages } = data
 
@@ -256,13 +319,19 @@ export default function TeacherList({ data }: { data: GetTeachersResponse }) {
             <TableHead>Subject</TableHead>
             <TableHead>Plans</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {teachers.length > 0 ? (
             teachers.map((teacher) => (
-              <TableRow key={teacher.id}>
+              <TableRow
+                key={teacher.id}
+                onClick={() => {
+                  if (hasPermission("tuition", "update")) {
+                    router.push(`/org/dashboard/setting/teacher/${teacher.id}`)
+                  }
+                }}
+              >
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
@@ -282,30 +351,14 @@ export default function TeacherList({ data }: { data: GetTeachersResponse }) {
                 <TableCell>{teacher.subject ?? "—"}</TableCell>
                 <TableCell>{teacher.planCount}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={
-                      teacher.status === "active"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
-                        : "border-muted-foreground/30 bg-muted text-muted-foreground"
-                    }
-                  >
-                    {teacher.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link href={`/org/dashboard/setting/teacher/${teacher.id}`}>
-                    <Button variant="default" size="icon">
-                      <PencilIcon className="size-4" />
-                    </Button>
-                  </Link>
+                  <TeacherStatusCell teacher={teacher} />
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={5}
                 className="h-24 text-center text-muted-foreground"
               >
                 {search

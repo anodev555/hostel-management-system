@@ -10,12 +10,14 @@ export const orgPermissions = {
   lodging: ["create", "read", "update", "delete"],
   food: ["create", "read", "update", "delete"],
   tuition: ["create", "read", "update", "delete"],
+  teacher: ["create", "read", "update", "delete"],
   organization: ["read", "update"],
   invoice: ["read"],
   payment: ["read", "update", "delete"],
   billing: ["read"],
   expenses: ["create", "read", "update", "delete"],
   payroll: ["create", "read", "update", "delete", "pay"],
+  visitor: ["create", "read", "delete", "checkout"],
 };
 
 const statement = {

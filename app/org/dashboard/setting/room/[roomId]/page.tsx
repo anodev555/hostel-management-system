@@ -1,10 +1,10 @@
-import React from "react"
-import RoomDetail from "./_components/room-detail"
+import React from "react";
+import RoomDetail from "./_components/room-detail";
 
 export default function page({
   params,
 }: {
-  params: Promise<{ roomId: string }>
+  params: Promise<{ roomId: string }>;
 }) {
-  return <RoomDetail params={params} />
+  return <RoomDetail params={params} />;
 }

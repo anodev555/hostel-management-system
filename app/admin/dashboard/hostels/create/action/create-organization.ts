@@ -76,6 +76,7 @@ export const createOrganizationAction = withAuth<
         slug: orgSlug,
         userId: newUser.user.id,
         location: parsed.data.location,
+        isActive: true,
       },
     })
 
@@ -166,6 +167,7 @@ export const createOrganizationWithExistingUserAction = withAuth<
         slug: orgSlug,
         userId: isUserExists.id,
         location: parsed.data.location,
+        isActive: true,
       },
     })
 

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ArrowRightLeft, ChevronsUpDownIcon } from "lucide-react";
 import { authClient } from "@/lib/authClient";
+import { ORG_INACTIVE_MESSAGE } from "@/lib/auth-messages";
 import type { Org } from "@/types/org-type";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,11 @@ export function TeamSwitcher({
     organizationSlug: string,
   ) => {
     if (organizationId === currentActiveOrganization?.id) {
+      return;
+    }
+    const target = organizations.find((o) => o.id === organizationId);
+    if (target?.isActive === false) {
+      toast.error(ORG_INACTIVE_MESSAGE);
       return;
     }
     try {

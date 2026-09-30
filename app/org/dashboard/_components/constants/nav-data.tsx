@@ -6,6 +6,7 @@ import {
   UserKey,
   DoorOpen,
   User,
+  Users,
   WalletIcon,
   GraduationCap,
   BanknoteArrowDown,
@@ -116,7 +117,7 @@ export const data = {
           title: "Student Billing",
           url: "/org/dashboard/billing",
           icon: <UserCheck />,
-          resource: "staff",
+          resource: "billing",
           action: "read",
         },
         {
@@ -124,6 +125,58 @@ export const data = {
           url: "/org/dashboard/payroll",
           icon: <BanknoteArrowUp />,
           resource: "payroll",
+          action: "read",
+        },
+      ],
+    },
+  ],
+  Settings: [
+    {
+      title: "Settings",
+      url: "#",
+      icon: <WalletIcon />,
+      isActive: false,
+      items: [
+        {
+          title: "Profile",
+          url: "/org/dashboard/setting",
+          icon: <UserCheck />,
+          resource: "organization",
+          action: "read",
+        },
+        {
+          title: "Lodging",
+          url: "/org/dashboard/setting/lodging",
+          icon: <BanknoteArrowUp />,
+          resource: "lodging",
+          action: "read",
+        },
+        {
+          title: "Room",
+          url: "/org/dashboard/setting/room",
+          icon: <BanknoteArrowUp />,
+          resource: "room",
+          action: "read",
+        },
+        {
+          title: "Fooding",
+          url: "/org/dashboard/setting/fooding",
+          icon: <BanknoteArrowUp />,
+          resource: "fooding",
+          action: "read",
+        },
+        {
+          title: "Tuition",
+          url: "/org/dashboard/setting/tuitionplan",
+          icon: <BanknoteArrowUp />,
+          resource: "tuition",
+          action: "read",
+        },
+        {
+          title: "Teacher",
+          url: "/org/dashboard/setting/teacher",
+          icon: <BanknoteArrowUp />,
+          resource: "teacher",
           action: "read",
         },
       ],
@@ -144,6 +197,16 @@ export const data = {
       icon: <BanknoteArrowDown />,
       isActive: true,
       resource: "expenses",
+      action: "read",
+    },
+  ],
+  Visitors: [
+    {
+      title: "Visitors",
+      url: "/org/dashboard/visitors",
+      icon: <Users />,
+      isActive: true,
+      resource: "visitor",
       action: "read",
     },
   ],
@@ -194,6 +257,16 @@ export const orgNavGroups: OrgNavGroup[] = [
     label: "Expenses",
 
     items: data.Expenses,
+  },
+  {
+    label: "Visitors",
+
+    items: data.Visitors,
+  },
+  {
+    label: "Setting",
+
+    items: data.Settings,
   },
   // {
   //   label: "Payroll",

@@ -48,6 +48,7 @@ export const getStaffDetailAction = withAuth<
         phone: user.contactPhone,
         displayUsername: user.displayUsername,
         image: user.image,
+        isActive: user.isActive,
         salary: payrollContract.monthlyAmount,
       })
       .from(member)

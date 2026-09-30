@@ -38,12 +38,18 @@ export const editTuitionSchema = z.object({
     .min(1, "Tuition plan name is required")
     .max(255, "Tuition plan name must be at most 255 characters"),
   monthlyPrice: amountSchema,
+})
+
+export type EditTuitionSchemaType = z.infer<typeof editTuitionSchema>
+
+export const updateTuitionStatusSchema = z.object({
+  tuitionPlanId: z.uuid("Invalid tuition plan id"),
   status: z.enum(tuitionStatusValues, {
     message: "Invalid tuition plan status",
   }),
 })
 
-export type EditTuitionSchemaType = z.infer<typeof editTuitionSchema>
+export type UpdateTuitionStatusSchemaType = z.infer<typeof updateTuitionStatusSchema>
 
 export const deleteTuitionSchema = z.object({
   tuitionPlanId: z.uuid("Invalid tuition plan id"),

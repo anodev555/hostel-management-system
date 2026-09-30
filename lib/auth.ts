@@ -1,30 +1,46 @@
 
 import { betterAuth } from "better-auth"
+import { APIError } from "better-auth/api"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { nextCookies } from "better-auth/next-js"
 import { admin, organization, username } from "better-auth/plugins"
 import * as schema from "@/db/schema"
 import { orgAc, ownerRole } from "./org-permissions"    
 import { asc, eq } from "drizzle-orm"
-import { member } from "@/db/schema"
+import { member, organization as organizationTable } from "@/db/schema"
 import { user } from "@/db/schema/auth-schema"
 import db from "@/db"
 import { ac, orgUserRole, superAdminRole } from "./admin-permissions"
+import { ORG_INACTIVE_MESSAGE, USER_INACTIVE_MESSAGE } from "./auth-messages"
 
 async function getInitialOrganization(userId: string) {
   const userdata = await db.query.user.findFirst({
     where: eq(user.id, userId),
-    columns: { role: true },
+    columns: { role: true, isActive: true },
   })
+  if (userdata?.isActive === false) {
+    throw new APIError("FORBIDDEN", { message: USER_INACTIVE_MESSAGE })
+  }
   // Platform admin — no single org
   if (userdata?.role === "superAdmin") return null
-  const memberships = await db.query.member.findMany({
-    where: eq(member.userId, userId),
-    columns: { organizationId: true },
-    orderBy: asc(member.createdAt),
-  })
+  const memberships = await db
+    .select({
+      organizationId: member.organizationId,
+      organizationIsActive: organizationTable.isActive,
+    })
+    .from(member)
+    .innerJoin(
+      organizationTable,
+      eq(member.organizationId, organizationTable.id)
+    )
+    .where(eq(member.userId, userId))
+    .orderBy(asc(member.createdAt))
   if (memberships.length === 0) return null
-  return { id: memberships[0].organizationId }
+  const firstActive = memberships.find((m) => m.organizationIsActive !== false)
+  if (!firstActive) {
+    throw new APIError("FORBIDDEN", { message: ORG_INACTIVE_MESSAGE })
+  }
+  return { id: firstActive.organizationId }
 }
 
 export const auth = betterAuth({
@@ -60,11 +76,11 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          const organization = await getInitialOrganization(session.userId)
+          const initialOrg = await getInitialOrganization(session.userId)
           return {
             data: {
               ...session,
-              activeOrganizationId: organization?.id ?? null,
+              activeOrganizationId: initialOrg?.id ?? null,
             },
           }
         },

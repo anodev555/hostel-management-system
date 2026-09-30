@@ -4,4 +4,5 @@ export type Org = {
   slug: string
   location?: string | null
   logo?: string | null
+  isActive?: boolean | null
 }

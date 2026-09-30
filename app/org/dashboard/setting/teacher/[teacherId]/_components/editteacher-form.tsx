@@ -38,13 +38,6 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -61,7 +54,6 @@ import {
 } from "../action/teacher-updatedelete"
 import {
   editTeacherSchema,
-  teacherStatusValues,
   type EditTeacherSchemaType,
 } from "../../schema/teacher-schema"
 
@@ -74,7 +66,6 @@ function teacherToFormValues(teacher: TeacherDetail): EditTeacherSchemaType {
     subject: teacher.subject ?? "",
     address: teacher.address ?? "",
     monthlySalary: teacher.monthlySalary ?? "",
-    status: teacher.status === "inactive" ? "inactive" : "active",
   }
 }
 
@@ -264,34 +255,6 @@ export default function EditTeacherForm({
                         disabled={isLoading}
                         {...field}
                       />
-                      <FieldError>{fieldState.error?.message}</FieldError>
-                    </Field>
-                  )}
-                />
-                <Controller
-                  control={form.control}
-                  name="status"
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={!!fieldState.error}>
-                      <FieldLabel htmlFor="edit-teacher-status">
-                        Status
-                      </FieldLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger id="edit-teacher-status">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teacherStatusValues.map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {value.charAt(0).toUpperCase() + value.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       <FieldError>{fieldState.error?.message}</FieldError>
                     </Field>
                   )}

@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { usePermissions } from "@/lib/permissions/usePermissions"
 import type { ActiveTeacherOption } from "@/types/teacher-types"
 
 import { createTuitionAction } from "../action/tuition"
@@ -49,6 +50,7 @@ export default function TuitionForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [teachers, setTeachers] = useState<ActiveTeacherOption[]>([])
   const [loadingTeachers, setLoadingTeachers] = useState(false)
+  const { hasPermission } = usePermissions()
 
   const form = useForm<CreateTuitionSchemaType>({
     resolver: zodResolver(createTuitionSchema),
@@ -126,12 +128,14 @@ export default function TuitionForm() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="lg" onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          Add tuition plan
-        </Button>
-      </DialogTrigger>
+      {hasPermission("tuition", "create") && (
+        <DialogTrigger asChild>
+          <Button size="lg" onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            Add tuition plan
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent
         className={cn("max-h-[90vh] overflow-y-auto sm:max-w-2xl")}

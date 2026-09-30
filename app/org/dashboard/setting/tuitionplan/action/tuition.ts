@@ -16,9 +16,11 @@ import {
   createTuitionSchema,
   deleteTuitionSchema,
   editTuitionSchema,
+  updateTuitionStatusSchema,
   type CreateTuitionSchemaType,
   type DeleteTuitionSchemaType,
   type EditTuitionSchemaType,
+  type UpdateTuitionStatusSchemaType,
 } from "../schema/create-tuition"
 import { format, subDays } from "date-fns"
 
@@ -318,7 +320,7 @@ export const updateTuitionAction = withAuth<
       }
     }
 
-    const { tuitionPlanId, teacherId, name, monthlyPrice, status } = parsed.data
+    const { tuitionPlanId, teacherId, name, monthlyPrice } = parsed.data
 
     const [existing] = await db
       .select({
@@ -348,7 +350,6 @@ export const updateTuitionAction = withAuth<
         .set({
           name,
           monthlyPrice,
-          status,
           updatedBy: session.user.id,
         })
         .where(
@@ -442,6 +443,74 @@ export const updateTuitionAction = withAuth<
     return {
       success: false,
       message: `${error instanceof Error ? error.message : "Something went wrong"}`,
+    }
+  }
+})
+
+export const updateTuitionStatusAction = withAuth<
+  UpdateTuitionStatusSchemaType,
+  ActionResponse<null>
+>({
+  roles: ["orgUser"],
+  permissions: {
+    tuition: ["update"],
+  },
+  requireActiveOrg: true,
+})(async ({ data, organizationId, session }): Promise<ActionResponse<null>> => {
+  try {
+    if (!organizationId) {
+      return {
+        success: false,
+        message: "No organization id found",
+      }
+    }
+
+    const parsed = updateTuitionStatusSchema.safeParse(data)
+    if (!parsed.success) {
+      const { fieldErrors } = z.flattenError(parsed.error)
+      return {
+        success: false,
+        message: "Invalid data",
+        fieldErrors,
+      }
+    }
+
+    const { tuitionPlanId, status } = parsed.data
+
+    const [updated] = await db
+      .update(tuitionPlan)
+      .set({
+        status,
+        updatedBy: session.user.id,
+      })
+      .where(
+        and(
+          eq(tuitionPlan.id, tuitionPlanId),
+          eq(tuitionPlan.organizationId, organizationId)
+        )
+      )
+      .returning({ id: tuitionPlan.id })
+
+    if (!updated) {
+      return {
+        success: false,
+        message: "Tuition plan not found",
+      }
+    }
+
+    revalidatePath(TUITION_LIST_PATH)
+    revalidatePath(`${TUITION_LIST_PATH}/${tuitionPlanId}`)
+
+    return {
+      success: true,
+      message: `Tuition plan marked as ${status} successfully`,
+      data: null,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      message: "Failed to update tuition plan status",
     }
   }
 })
