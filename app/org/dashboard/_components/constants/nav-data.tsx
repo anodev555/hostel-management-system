@@ -12,6 +12,7 @@ import {
   BanknoteArrowDown,
   UserCheck,
   BanknoteArrowUp,
+  BarChart3Icon,
 } from "lucide-react";
 import type { OrgNavGroup } from "../nav-types";
 
@@ -218,6 +219,16 @@ export const data = {
       isActive: true,
     },
   ],
+  Reports: [
+    {
+      title: "Reports",
+      url: "/org/dashboard/reports",
+      icon: <BarChart3Icon />,
+      isActive: true,
+      resource: "report",
+      action: "read",
+    },
+  ],
 };
 
 export const orgNavGroups: OrgNavGroup[] = [
@@ -257,6 +268,11 @@ export const orgNavGroups: OrgNavGroup[] = [
     label: "Expenses",
 
     items: data.Expenses,
+  },
+  {
+    label: "Reports",
+
+    items: data.Reports,
   },
   {
     label: "Visitors",

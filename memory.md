@@ -183,5 +183,287 @@ Closing the contracts inside the same transaction makes the toggle safe;
 2. `update<Resource>StatusAction` added; `status` stripped from the update action.
 3. Status control deleted from the detail edit form (+ prune dead imports).
 4. List: Badge + Switch, Action column removed, row click permission-gated.
-5. Create trigger permission-gated.
+5. Create-trigger permission-gated.
 6. `npm run typecheck` clean for the touched files.
+
+## Reports route (`/org/dashboard/reports`)
+Fills the previously empty stub. One page, three tabs, one shared month-range
+filter. Adds `recharts@3.10.1` (first chart dep in the repo; React 19 ok).
+
+### Reports built
+1. **Revenue by category** — `invoice_line_item.category` (tuition/lodging/food/fine),
+   which was populated but never aggregated anywhere. Total, per-category share,
+   stacked-by-month, and a total trend line.
+2. **Expense analysis** — multi-month series + category breakdown. Fills the gap
+   left by `getExpenseDashboardAction`, which is hard-pinned to the current
+   calendar month with no way to change it.
+3. **Payroll** — staff vs teacher split of invoiced/paid/outstanding, monthly
+   cost, and the current monthly run-rate from open contracts. No existing screen
+   grouped payroll by `payeeType`.
+
+### Non-obvious decisions
+- **Month range is a (year, month) pair, never raw dates.** Every reportable
+  table stores a denormalised year/month pair, not one date column. Filtering the
+  two columns independently is a real bug: `month <= toMonth` silently pulls in
+  January of the *following* year. `monthRangeFilter()` uses a row constructor —
+  `(year, month) between (a,b) and (c,d)` — the only correct formulation.
+  Verified against Postgres: the tuple form executes and cross-year ranges behave.
+- **Aggregate on amounts, never on `status`.** No check constraint ties
+  `invoice.status` / `payrollInvoice.status` to the amount columns, so the label
+  can drift. `dueAmount` is safe to sum because `*_due_matches` guarantees
+  `due = total - paid`. `void` is excluded at the header level everywhere.
+- **All money is `numeric(10,2)` and Drizzle returns strings** — summing with `+`
+  concatenates. Every aggregate goes through `toNumber()` in `reports.ts`.
+- **Series are zero-filled in JS** (`buildMonthSeries`) or recharts renders gaps
+  for months with no rows.
+- **Reused the existing `SummaryBox`** from `invoices/_components/utils.tsx`
+  rather than adding a fifth near-identical copy. Share bars are plain CSS so
+  they stay server-renderable; only chart bodies are `"use client"`.
+- **Range is validated twice**: zod in the action (authoritative) and a
+  no-op-if-invalid guard in the filter, so the UI cannot produce a range the
+  action will reject. Capped at `MAX_RANGE_MONTHS = 24`.
+- **Default range is the last 6 months**; URL params (`fromYear`/`fromMonth`/
+  `toYear`/`toMonth`) so the range survives reload and tab switches, matching the
+  `student-filter.tsx` convention.
+
+### Two real bugs found while building
+1. **`getPreviousMonth.ts:9` is hardcoded to `new Date("2026-09-01")`** — it always
+   returns Aug 2026 regardless of the real date. Pre-existing; deliberately NOT
+   reused by the reports, which use `defaultRange()` in the reports schema module
+   instead. **Still needs its own fix.**
+2. **Client-reference trap (hit during this work):** `defaultRange()` was first
+   written in `report-filter.tsx`, which is `"use client"`. A plain function
+   exported from a client module becomes a client reference when imported by a
+   server component, so calling it during a server render throws. It now lives in
+   the server-safe `report-schema.ts`. Keep pure helpers used by loaders out of
+   `"use client"` files.
+
+### Payroll: contract-only payees
+`getPayrollSummary` seeds the per-payee map from **open contracts first**, then
+accumulates invoices onto it. Otherwise a payee holding an active contract but
+invoiced nothing in the range is counted in the run-rate while being absent from
+the table. Confirmed real in the current data: the staff member with the 12,000
+active contract (`test`) is not the one with the Aug invoice (`Ram Bahadur Karki`).
+
+`activeRunRate` is point-in-time, not period-scoped, so it is deliberately kept in
+its own field and never added into the range totals. The UI labels this.
+
+### Permission
+New `report: ["read"]` in `lib/org-permissions.ts`, gating all four actions
+(`getReportsDataAction` plus the three per-report ones) and the nav entry.
+Additive, no migration. As with `visitor`, **the owner inherits it but custom
+roles must be granted it via the Roles UI.**
+
+### Verified
+- `npm run typecheck` — clean for all touched files (pre-existing `orgAdmin` /
+  `staff-salary-utils` errors remain). `npm run build` compiles; it still fails
+  only on the pre-existing `create-organization.ts` error.
+- Ran all three report queries directly against the dev DB: revenue, expense and
+  payroll groupings all return correct rows; the tuple range filter works
+  including a cross-year range.
+- Dev server serves `/org/dashboard/reports` (200, redirects to login without a
+  session, no module errors); all recharts named exports confirmed present.
+- [ ] **Manual, needs a session:** filter drives all three tabs, `void` invoices
+  excluded, empty months render as zero, a permission-less org user sees no nav
+  entry and gets 403, charts render in light + dark mode.
+
+### Not built (deliberate)
+- **CSV export** — view-only for this pass; the aggregate actions already return
+  plain series arrays, so a CSV action is a small addition.
+- Reports for collection rate, occupancy/beds and dues aging were scoped out in
+  favour of these three.
+- Follow-ups from earlier sections still open: `generateInvoicesPerOrg` ignores
+  inactive tuition plans, and the `generatePayrollInvoicesPerOrg` status filter
+  is still unimplemented.
+
+## Profit & loss (4th tab on `/org/dashboard/reports`)
+Accrual basis, with cash + receivables as memo lines only.
+
+### Shape
+Revenue (tuition/lodging/food/fines) → direct costs (staff payroll, teacher
+payroll, **food purchases**) → gross profit → operating expenses (rent,
+utilities, maintenance, fuel, other) → net profit. Compared against the
+equal-length period immediately before.
+
+- **Accrual is the only defensible basis.** Revenue is earned in the housing
+  month (invoice period), but cash lands 1–2 months later. In the current data
+  the two are entirely disjoint — revenue 52,520 in Jun and Jul, cash 16,454 in
+  Aug and 12,961 in Sep. A cash-basis P&L would show *zero revenue* in the
+  months students were actually housed.
+- **Food is a direct cost, not a double count.** Students are billed for food
+  separately (`invoice_line_item.category = 'food'`) and the hostel records
+  grocery expenses, so food revenue minus food purchases is real margin. This
+  is the only category reclassification in the statement; food must never be
+  counted in both blocks.
+- **No AR rollforward is shown.** Waived fines (`student_fines.waived`) break
+  the tie between AR movement and cash, so a derived movement would imply a
+  reconciliation that does not hold. Levels only.
+- **pctChange is null when the prior period is 0** — a percentage against zero
+  is Infinity/NaN, so it renders as `—` rather than a fake -100%.
+- One grouped query per source spans the **union** of both windows and is
+  split in JS, halving the query count. 7 queries total.
+- Cost lines invert the variance colour (a cost increase reads as bad).
+
+### Correction: the "phantom payroll" claim was wrong
+An earlier note (and the original plan) claimed teacher `fa`'s 17,419 was
+phantom cost because the teacher had no *open* contract. **That was incorrect.**
+Both August invoices are backed by a real contract covering that period:
+
+| Payee | Period | Invoiced | Contract covering it |
+|---|---|---|---|
+| Ram Bahadur Karki (staff) | 2026-08 | 30,000 | 2026-07-31 → 2026-09-28, `inactive` |
+| fa (teacher) | 2026-08 | 17,419 | 2026-08-10 → 2026-09-29, `inactive` |
+
+Both contracts were *closed after* the work was done (leave / raise rotation),
+which is normal — the accrued cost is correct. The detection is therefore on
+**period overlap**, never on "is a contract open right now"; the latter would
+accuse real payroll of being phantom. It uses `make_date(period_year,
+period_month, 1) between effective_from and coalesce(effective_to, 'infinity')`
+because the period columns are integers and must not be tuple-compared against
+`date` columns. Verified: current data yields zero flags, and a negative
+control (Jan 2026 → 0 contracts) confirms the check is not simply always-zero.
+
+The `generatePayrollInvoicesPerOrg` status bug is still real — it just manifests
+when a *closed* contract's `effectiveTo` sits in the future, so a future month
+gets billed after someone has left. Not yet demonstrated in this dataset.
+
+### Two SQL traps hit while building
+1. **`between $2,$3 and $4,$5` is a syntax error.** Row constructors need
+   parens: `between ($2, $3) and ($4, $5)`, which is what `monthRangeFilter`
+   emits. Also, passing unused params makes Postgres fail with *"could not
+   determine data type of parameter $N"*.
+2. **A correlated subquery in a grouped select cannot read ungrouped columns**
+   (*"subquery uses ungrouped column"*). The per-payee contract-count subquery
+   therefore forces `organizationId`, `memberId` and `teacherId` into the
+   `GROUP BY` alongside the functionally-determined `payeeId`.
+
+### Verified
+- P&L reconciled against the dev DB for Apr–Sep 2026: revenue 105,040
+  (tuition 12,000 / lodging 71,000 / food 22,040) − direct 50,049 = gross 54,991
+  (52.4%) − opex 10,464 (utilities 10,000 / maintenance 464) = **net 44,527
+  (42.4%)**. Cash collected 29,415; closing receivables 75,625.
+- `previousRange()` unit-tested over 6 cases: correct width and always
+  contiguous with the current window, including January and cross-year starts.
+  (First implementation was wrong for January ranges and could overlap the
+  current period; rewritten to end the month before the range starts.)
+- `typecheck` clean; `npm run build` compiles (still fails only on the
+  pre-existing `create-organization.ts`); dev server serves the route with no
+  module errors.
+- [ ] **Manual, needs a session:** variance columns, `—` on a zero prior
+  period, negative margins rendering, chart rendering in light + dark mode.
+
+### Known limitation
+Monthly figures are lopsided because there is no backfill: both generators use
+`getPreviousMonth()`, hardcoded to `2026-09-01`, so payroll only ever ran for
+August 2026 and expenses only exist for September. Jun/Jul show revenue with no
+costs, Aug shows cost with no revenue. The **range totals are the trustworthy
+number**; the chart carries an inline note saying exactly this. Fixing
+`getPreviousMonth.ts` is a prerequisite for the monthly view to mean anything.
+
+## P&L tab — REWRITTEN as cash & outstanding
+The accrual P&L above was **replaced** at the user's request. Revenue is now
+student payments (collected + outstanding), expenses are payroll (cash gone +
+outstanding) plus the expenses table (cash gone only). Simpler and visual: no
+prior-period comparison, no % change, no statement table.
+
+### The core modelling rule
+**`cash` and `outstanding` are on different timelines and are never added
+together.** Cash is measured when money moved (`payment.paidAt`,
+`payrollPayment.paidAt`, `expenses.expense_date`); outstanding is a live
+`dueAmount` on invoices *raised* in the range. A payment can settle an older
+bill, so `collected + outstanding` happens to equal billed in the current data
+(29,415 + 75,625 = 105,040) but is a **coincidence, not an identity**, and
+relying on it would silently break once older invoices exist.
+
+The two headline nets are therefore each internally consistent:
+- `netCash` = students.cash − payroll.cash − operations.cash
+- `netPosition` = students.invoiced − payroll.invoiced − operations.cash
+
+Verified to cross-check: `netPosition` (44,527) equals the old accrual bottom
+line, confirming the two views describe the same reality on different bases.
+
+### Operations has no outstanding, by construction
+The `expenses` table has **no status column and no payable lifecycle** (18
+columns, verified) — a row is only created once the money has already gone. So
+operations.outstanding is always 0 by construction, not by omission. Stated in
+the UI so it does not look like missing data.
+
+### The two sides sit on different periods
+Payroll *cash* left in September while the invoice it settles is August's. The
+UI labels these separately ("Cash paid in range" vs "Outstanding on payroll
+raised in range") so the mismatch does not read as a contradiction.
+
+### New: filtering timestamp cash columns
+`payment.paidAt` and `payrollPayment.paidAt` are timestamps, not the
+denormalised `(year, month)` pair every other reportable table uses, so
+`monthRangeFilter` cannot apply. New helpers in `report-schema.ts`:
+- `cashDateRangeFilter(col, start, endExclusive)` →
+  `col >= start::timestamp and col < endExclusive::timestamp`. **The column is
+  compared bare, never wrapped in a function** — see the sargability note below.
+- `cashMonthKey(col)` → `to_char(col, 'YYYY-MM')`, which matches
+  `monthKey()`'s output format so the two maps align (verified for months
+  1, 2, 8, 9, 12). `to_char` is fine here because grouping does not need
+  index support.
+- `rangeStartDate` / `rangeEndExclusiveDate`. The upper bound is **exclusive at
+  the start of the following month**, not "last day of `toMonth`", because
+  `paid_at` carries a time component — an inclusive `<= lastDay` on a date
+  would silently drop anything recorded after midnight on the final day.
+  Verified: 03-31 23:59:59.999999 excluded, 04-01 00:00:00 included,
+  09-30 23:59:59.999999 included, 10-01 00:00:00 excluded.
+
+`invoice`, `payrollInvoice` and `expenses` keep the tuple filter.
+
+### Sargability: why there is no index on `paid_at`
+The first version of this filter was
+`make_date(extract(year from paid_at)::int, extract(month from paid_at)::int, 1)
+between from and to`. It was **correct but non-sargable** — `paid_at` appeared
+only inside the expression, so it landed in the plan's `Filter`, and **no index
+on `paid_at` could ever be used, no matter what indexes existed.** EXPLAIN
+confirmed both shapes:
+
+```
+old: Filter: (make_date(EXTRACT(year FROM paid_at)::integer, ...) >= ...)
+new: Filter: (paid_at >= '2026-04-01'::timestamp AND paid_at < '2026-10-01'::timestamp)
+```
+
+Rewritten to a bare `>= / <` range, so a `(organization_id, paid_at)` index
+*would* be used if one is ever added, and two per-row function calls disappear.
+Both forms return 29,415 (student) and 30,000 (payroll) — verified identical.
+
+**The `(organization_id, paid_at)` index was deliberately NOT added.** At 10
+rows / 80 kB (payment) and 2 rows / 64 kB (payroll_payment) a btree index is
+pure write overhead with no read benefit — the planner will never choose it.
+It is now a one-line schema addition that would actually work, so defer it until
+the tables get large.
+
+### Dead code removed
+`previousRange()` (only the P&L used it), `parseMonthKey()` (never used), the
+`StatementLine`/`StatementBlock`/`ProfitLossSide` types, and the whole variance
+table with its `TrendingUp`/`TrendingDown` change column. `monthDistance` stays
+— still used by range validation and `buildMonthSeries`.
+
+### Verified (Apr–Sep 2026, dev DB)
+| Figure | Value |
+|---|---|
+| Collected from students | 29,415 |
+| — of which flagged late | 12,961 |
+| Outstanding on student invoices in range | 75,625 |
+| Student invoiced in range | 105,040 |
+| Paid out to staff/teachers | 30,000 |
+| Outstanding on payroll raised in range | 17,419 |
+| Payroll invoiced in range | 47,419 |
+| Operational spend | 13,094 |
+| **Net cash position** | **−13,679** |
+| **Net position** | **44,527** |
+
+Month keys, range bounds and all figures confirmed by direct SQL. `typecheck`
+clean; `npm run build` compiles (still fails only on the pre-existing
+`create-organization.ts`); dev server serves the route with no module errors.
+- [ ] **Manual, needs a session:** negative cash card styling, split bars at
+  100% width, late-payment figure, chart in light + dark mode.
+
+### Outstanding follow-up
+None. The `paid_at` index question is settled — the filter is now sargable, so
+adding `(organization_id, paid_at)` to `payment` and `payroll_payment` is
+optional future-proofing, deferred because both tables are near-empty.
+
