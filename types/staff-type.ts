@@ -15,6 +15,8 @@ export type StaffSalaryContract = {
   effectiveFrom: string
   effectiveTo: string | null
   status: "active" | "inactive"
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export type StaffDetail = {

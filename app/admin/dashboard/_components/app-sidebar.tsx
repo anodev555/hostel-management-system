@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
 import {
   Sidebar,
@@ -11,47 +11,36 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-import { NavMenu } from "./nav-menu"
-import { CollapsibleNav } from "./collapsible-nav"
-import { data } from "./constants/nav-data"
-import { NavUser } from "./nav-user"
-import { PlusIcon } from "lucide-react"
+import { NavMenu } from "./nav-menu";
+import { CollapsibleNav } from "./collapsible-nav";
+import { data } from "./constants/nav-data";
+import { NavUser } from "./nav-user";
+import { PlusIcon } from "lucide-react";
 
 export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: {
-    name: string
-    email: string
-    avatar: string
-    role: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+    role: string;
+  };
 }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <NavUser user={user} /> {/* <TeamSwitcher teams={data.teams} /> */}
+        <NavUser user={user} />
       </SidebarHeader>
       <SidebarContent>
-        {/* Create Hostel action button */}
-        <div className="flex flex-col gap-2 p-2">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <PlusIcon />
-                Create Hostel
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </div>
         <CollapsibleNav label="Hostels" items={data.Hostels} />
-        {/* <NavMenu label="Projects" items={data.projects} hideWhenCollapsed /> */}
+        <CollapsibleNav label="Subscriptions" items={data.Subscriptions} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

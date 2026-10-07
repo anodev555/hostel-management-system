@@ -1,24 +1,24 @@
-"use server"
+"use server";
 
-import { withAuth } from "@/lib/withAuth"
+import { withAuth } from "@/lib/withAuth";
 import {
   createOrgSchema,
   CreateOrgSchemaType,
   createOrgWithExistingUserSchema,
   CreateOrgWithExistingUserSchemaType,
-} from "../schema/organizationSchema"
-import z from "zod"
-import { auth } from "@/lib/auth"
-import { slugify } from "@/utils/slugify"
-import db from "@/db"
-import { eq } from "drizzle-orm"
-import { user } from "@/db/schema"
+} from "../schema/organization-schema";
+import z from "zod";
+import { auth } from "@/lib/auth";
+import { slugify } from "@/utils/slugify";
+import db from "@/db";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema";
 
 type createOrganizationResponse = {
-  success: boolean
-  message: string
-  fieldErrors?: Record<string, string[]>
-}
+  success: boolean;
+  message: string;
+  fieldErrors?: Record<string, string[]>;
+};
 
 export const createOrganizationAction = withAuth<
   CreateOrgSchemaType,
@@ -29,23 +29,23 @@ export const createOrganizationAction = withAuth<
     user: ["create", "set-role"],
   },
 })(async ({ data, headers }): Promise<createOrganizationResponse> => {
-  const parsed = createOrgSchema.safeParse(data)
+  const parsed = createOrgSchema.safeParse(data);
   if (!parsed.success) {
-    const { fieldErrors } = z.flattenError(parsed.error)
+    const { fieldErrors } = z.flattenError(parsed.error);
 
     return {
       success: false,
       message: "Invalid input",
       fieldErrors: fieldErrors as Record<string, string[]>,
-    }
+    };
   }
-  let createdUserId: string | undefined
+  let createdUserId: string | undefined;
   try {
     const newUser = await auth.api.createUser({
       body: {
         email: parsed.data.ownerEmail,
         name: parsed.data.ownerFullName,
-        role: "orgAdmin",
+        role: "orgUser",
         password: parsed.data.ownerPassword,
         data: {
           contactPhone: parsed.data.ownerPhone,
@@ -54,20 +54,20 @@ export const createOrganizationAction = withAuth<
         },
       },
       headers,
-    })
-    createdUserId = newUser.user.id
-    const orgSlug = slugify(parsed.data.orgName)
-    const data = await auth.api.checkOrganizationSlug({
+    });
+    createdUserId = newUser.user.id;
+    const orgSlug = slugify(parsed.data.orgName);
+    const slugCheck = await auth.api.checkOrganizationSlug({
       body: {
         slug: orgSlug,
       },
       headers,
-    })
-    if (!data.status) {
+    });
+    if (!slugCheck.status) {
       return {
         success: false,
         message: "Organization name already exists",
-      }
+      };
     }
 
     const newOrganization = await auth.api.createOrganization({
@@ -78,14 +78,14 @@ export const createOrganizationAction = withAuth<
         location: parsed.data.location,
         isActive: true,
       },
-    })
+    });
 
     return {
       success: true,
       message: `Organization ${newOrganization.name} created successfully for user ${newUser.user.name}`,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     if (createdUserId) {
       await auth.api
         .removeUser({
@@ -96,17 +96,17 @@ export const createOrganizationAction = withAuth<
         })
         .catch((error) => {
           console.error(
-            `RollBack Error: falied to remove user ${createdUserId} | ${error instanceof Error ? error.message : "Unknown error"}`
-          )
-        })
+            `RollBack Error: falied to remove user ${createdUserId} | ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+        });
     }
     return {
       success: false,
       message: `${error instanceof Error ? error.message : "Unknown error"}`,
       fieldErrors: {},
-    }
+    };
   }
-})
+});
 
 export const createOrganizationWithExistingUserAction = withAuth<
   CreateOrgWithExistingUserSchemaType,
@@ -118,47 +118,46 @@ export const createOrganizationWithExistingUserAction = withAuth<
   },
 })(async ({ data, headers }): Promise<createOrganizationResponse> => {
   try {
-    const parsed = createOrgWithExistingUserSchema.safeParse(data)
+    const parsed = createOrgWithExistingUserSchema.safeParse(data);
     if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
+      const { fieldErrors } = z.flattenError(parsed.error);
       return {
         success: false,
         message: "Invalid input",
         fieldErrors: fieldErrors as Record<string, string[]>,
-      }
+      };
     }
 
     const isUserExists = await db.query.user.findFirst({
       where: eq(user.username, parsed.data.ownerUsername),
-    })
+    });
 
     if (!isUserExists?.id) {
       return {
         success: false,
         message: "User not found with username: " + parsed.data.ownerUsername,
-      }
+      };
     }
 
-    if (isUserExists.role !== "orgAdmin") {
+    if (isUserExists.role !== "orgUser") {
       return {
         success: false,
-        message:
-          "User is not an organization admin! Cannot assign Organization",
-      }
+        message: "User is not an organization user! Cannot assign Organization",
+      };
     }
 
-    const orgSlug = slugify(parsed.data.orgName)
+    const orgSlug = slugify(parsed.data.orgName);
     const isOrgSlugExists = await auth.api.checkOrganizationSlug({
       body: {
         slug: orgSlug,
       },
       headers,
-    })
+    });
     if (!isOrgSlugExists.status) {
       return {
         success: false,
         message: "Organization name already exists",
-      }
+      };
     }
 
     const newOrganization = await auth.api.createOrganization({
@@ -169,18 +168,18 @@ export const createOrganizationWithExistingUserAction = withAuth<
         location: parsed.data.location,
         isActive: true,
       },
-    })
+    });
 
     return {
       success: true,
       message: `Organization ${newOrganization.name} created successfully for user ${isUserExists.name}`,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return {
       success: false,
       message: `${error instanceof Error ? error.message : "Unknown error"}`,
       fieldErrors: {},
-    }
+    };
   }
-})
+});

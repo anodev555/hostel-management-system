@@ -41,3 +41,10 @@ export const createOrgWithExistingUserSchema = z.object({
 export type CreateOrgWithExistingUserSchemaType = z.infer<
   typeof createOrgWithExistingUserSchema
 >
+
+export const updateHostelStatusSchema = z.object({
+  hostelId: z.string().trim().min(1, "Hostel id is required"),
+  isActive: z.boolean(),
+})
+
+export type UpdateHostelStatusSchemaType = z.infer<typeof updateHostelStatusSchema>

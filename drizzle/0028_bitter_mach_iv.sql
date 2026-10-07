@@ -1,0 +1,3 @@
+ALTER TABLE "subscription_plan" DROP CONSTRAINT "subscription_plan_monthly_price_non_negative";--> statement-breakpoint
+ALTER TABLE "subscription_plan" ALTER COLUMN "monthly_price" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "subscription_plan" ADD CONSTRAINT "subscription_plan_monthly_price_non_negative" CHECK ("subscription_plan"."monthly_price" IS NULL OR "subscription_plan"."monthly_price" >= 0);

@@ -6,14 +6,7 @@ import {
 import React from "react"
 import { AppSidebar } from "./_components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"

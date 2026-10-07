@@ -3,13 +3,14 @@ import {
   BotIcon,
   Building2,
   EyeIcon,
+  FolderKanban,
   FrameIcon,
   GalleryVerticalEndIcon,
   MapIcon,
   PieChartIcon,
   PlusIcon,
   TerminalIcon,
-} from "lucide-react"
+} from "lucide-react";
 
 export const data = {
   teams: [
@@ -45,16 +46,26 @@ export const data = {
       isActive: true,
       items: [
         {
-          title: "Create Hostel",
-          icon: <PlusIcon />,
-          url: "/admin/dashboard/hostels/create",
-        },
-        {
-          title: "View Hostels",
-          icon: <EyeIcon />,
+          title: "Manage Hostels",
+          icon: <FolderKanban />,
           url: "/admin/dashboard/hostels",
         },
       ],
     },
   ],
-}
+  Subscriptions: [
+    {
+      title: "Subscription",
+      url: "#",
+      icon: <Building2 />,
+      isActive: true,
+      items: [
+        {
+          title: "Manage Subscriptions",
+          icon: <FolderKanban />,
+          url: "/admin/dashboard/subscriptions",
+        },
+      ],
+    },
+  ],
+};

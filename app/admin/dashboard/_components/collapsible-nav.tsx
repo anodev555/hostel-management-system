@@ -42,7 +42,7 @@ export function CollapsibleNav({ label, items }: CollapsibleNavProps) {
                   isActive={item.isActive}
                 >
                   {item.icon}
-                  <span>{item.title}</span>
+                  <span className="font-semibold">{item.title}</span>
                   <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
               </CollapsibleTrigger>
@@ -53,7 +53,7 @@ export function CollapsibleNav({ label, items }: CollapsibleNavProps) {
                       <SidebarMenuSubButton asChild isActive={subItem.isActive}>
                         <a href={subItem.url}>
                           {subItem.icon ? <>{subItem.icon}</> : null}
-                          <span>{subItem.title}</span>
+                          <span className="font-semibold">{subItem.title}</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
