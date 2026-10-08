@@ -39,3 +39,44 @@ export type HostelListPayload = {
   };
   metrics: HostelListMetrics;
 };
+
+export type HostelDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  location: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  totalStudents: number;
+  staffCount: number;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+    username: string | null;
+    phone: string | null;
+    image: string | null;
+    createdAt: Date;
+    isActive: boolean;
+  } | null;
+  subscription: {
+    id: string;
+    planId: string;
+    planName: string;
+    priceAtSignup: string;
+    status: string;
+    maxStudentsSnapshot: number | null;
+    maxStaffSnapshot: number | null;
+    nextBillingDate: string;
+    startedAt: Date;
+  } | null;
+  availablePlans: Array<{
+    id: string;
+    name: string;
+    price: string | null;
+    description: string | null;
+    maxStudents: number | null;
+    maxStaff: number | null;
+  }>;
+};

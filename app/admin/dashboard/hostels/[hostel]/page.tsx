@@ -1,5 +1,6 @@
-import React from "react";
+import { Suspense } from "react";
 import HostelDetail from "./_components/hosteldetail";
+import HostelDetailSkeleton from "./_components/hosteldetail-skeleton";
 
 export default function Page({
   params,
@@ -7,8 +8,8 @@ export default function Page({
   params: Promise<{ hostel: string }>;
 }) {
   return (
-    <div>
-      <HostelDetail />
-    </div>
+    <Suspense fallback={<HostelDetailSkeleton />}>
+      <HostelDetail params={params} />
+    </Suspense>
   );
 }

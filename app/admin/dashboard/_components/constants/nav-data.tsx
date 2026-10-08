@@ -43,12 +43,13 @@ export const data = {
       title: "Hostels",
       url: "#",
       icon: <Building2 />,
-      isActive: true,
+      isActive: false,
       items: [
         {
           title: "Manage Hostels",
           icon: <FolderKanban />,
           url: "/admin/dashboard/hostels",
+          isActive: false,
         },
       ],
     },
@@ -58,12 +59,13 @@ export const data = {
       title: "Subscription",
       url: "#",
       icon: <Building2 />,
-      isActive: true,
+      isActive: false,
       items: [
         {
           title: "Manage Subscriptions",
           icon: <FolderKanban />,
           url: "/admin/dashboard/subscriptions",
+          isActive: false,
         },
       ],
     },
